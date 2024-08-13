@@ -1,0 +1,6 @@
+sqlite:
+  dsn: "migrate.db"
+  output: "./pkg/database/gen/models"
+
+no_factory: True
+wipe: true
