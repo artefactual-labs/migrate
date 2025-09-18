@@ -1,10 +1,11 @@
 package application
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
-	"time"
 )
 
 type MoveWorkflowParams struct {

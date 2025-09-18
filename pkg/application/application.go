@@ -5,16 +5,18 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"os"
+	"strings"
+
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
 	"github.com/google/uuid"
 	"github.com/stephenafamo/bob"
+	"go.temporal.io/sdk/client"
+
 	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
 	"github.com/artefactual-labs/migrate/pkg/storage_service"
-	"go.temporal.io/sdk/client"
-	"log/slog"
-	"os"
-	"strings"
 )
 
 type App struct {
@@ -51,8 +53,6 @@ const (
 	AIPReplicationStatusFailed     AIPReplicationStatus = "failed"
 	AIPReplicationStatusFinished   AIPReplicationStatus = "finished"
 )
-
-const ()
 
 /*
 func (a *App) RunDaemonBatch(input []string) error {

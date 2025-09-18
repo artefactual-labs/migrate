@@ -3,14 +3,16 @@ package application
 import (
 	"errors"
 	"fmt"
-	"github.com/aarondl/opt/omit"
-	"github.com/aarondl/opt/omitnull"
-	"github.com/cenkalti/backoff/v4"
-	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
-	"github.com/artefactual-labs/migrate/pkg/storage_service"
 	"log/slog"
 	"strings"
 	"time"
+
+	"github.com/aarondl/opt/omit"
+	"github.com/aarondl/opt/omitnull"
+	"github.com/cenkalti/backoff/v4"
+
+	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
+	"github.com/artefactual-labs/migrate/pkg/storage_service"
 )
 
 type Action struct {

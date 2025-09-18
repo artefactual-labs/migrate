@@ -5,17 +5,19 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/aarondl/opt/omit"
-	"github.com/aarondl/opt/omitnull"
-	"github.com/google/uuid"
-	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
-	"github.com/artefactual-labs/migrate/pkg/storage_service"
-	"go.temporal.io/sdk/temporal"
-	"go.temporal.io/sdk/workflow"
 	"log/slog"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/aarondl/opt/omit"
+	"github.com/aarondl/opt/omitnull"
+	"github.com/google/uuid"
+	"go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/workflow"
+
+	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
+	"github.com/artefactual-labs/migrate/pkg/storage_service"
 )
 
 const DEFAULT_TASKT_QUEUE = "default-task-queue"

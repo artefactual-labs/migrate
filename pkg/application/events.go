@@ -3,11 +3,13 @@ package application
 import (
 	"context"
 	"encoding/json"
-	"github.com/aarondl/opt/omit"
-	"github.com/aarondl/opt/omitnull"
-	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
 	"log/slog"
 	"time"
+
+	"github.com/aarondl/opt/omit"
+	"github.com/aarondl/opt/omitnull"
+
+	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
 )
 
 type Event struct {

@@ -7,10 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stephenafamo/bob"
-	"github.com/artefactual-labs/migrate/efs"
-	"github.com/artefactual-labs/migrate/pkg/application"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/activity"
@@ -18,8 +19,9 @@ import (
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"log/slog"
-	"os"
+
+	"github.com/artefactual-labs/migrate/efs"
+	"github.com/artefactual-labs/migrate/pkg/application"
 )
 
 var pause bool

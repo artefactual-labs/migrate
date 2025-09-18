@@ -2,12 +2,13 @@ package application
 
 import (
 	"context"
-	"github.com/google/uuid"
-	"go.temporal.io/sdk/temporal"
-	"go.temporal.io/sdk/workflow"
 	"log/slog"
 	"os/exec"
 	"time"
+
+	"github.com/google/uuid"
+	"go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/workflow"
 )
 
 type IndexWorkflowParams struct {
@@ -56,8 +57,7 @@ func (w *IndexWorkflow) Run(ctx workflow.Context, params IndexWorkflowParams) (*
 
 const IndexActivityName = "Index"
 
-type IndexActivityResult struct {
-}
+type IndexActivityResult struct{}
 
 func (a *App) Index(ctx context.Context, params IndexWorkflowParams) (*IndexActivityResult, error) {
 	result := &IndexActivityResult{}
@@ -69,8 +69,7 @@ func (a *App) Index(ctx context.Context, params IndexWorkflowParams) (*IndexActi
 	}
 
 	e := StartEvent(ActionIndex)
-	var cmd *exec.Cmd
-	cmd = exec.Command(
+	var cmd *exec.Cmd = exec.Command(
 		a.Config.Dashboard.PythonPath,
 		a.Config.Dashboard.ManagePath,
 		"rebuild_aip_index_from_storage_service",

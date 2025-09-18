@@ -2,9 +2,10 @@ package application
 
 import (
 	"context"
-	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
 	"sort"
 	"time"
+
+	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
 )
 
 // func (a *App) RunDaemonOne(input []string) error {

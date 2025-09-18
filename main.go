@@ -3,8 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/artefactual-labs/migrate/pkg/application"
 	"os"
+
+	"github.com/artefactual-labs/migrate/pkg/application"
 )
 
 func main() {
@@ -50,7 +51,7 @@ func main() {
 			application.PanicIfErr(err)
 		}
 
-		f, err := os.OpenFile("final_list.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		f, err := os.OpenFile("final_list.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 		application.PanicIfErr(err)
 		for _, v := range finalListSlice {
 			_, err := f.WriteString(v + "\n")
