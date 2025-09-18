@@ -57,11 +57,11 @@ func main() {
 			_, err := f.WriteString(v + "\n")
 			application.PanicIfErr(err)
 		}
-		f.Close()
+		f.Close() //nolint:errcheck
 		{
 			f, err := os.Open("final_list.txt")
 			application.PanicIfErr(err)
-			defer f.Close()
+			defer f.Close() //nolint:errcheck
 			s := bufio.NewScanner(f)
 			for s.Scan() {
 				finalCount++

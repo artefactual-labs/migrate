@@ -51,6 +51,7 @@ func main() {
 			Namespace:                        "move",
 			WorkflowExecutionRetentionPeriod: &durationpb.Duration{Seconds: 31_536_000 /* 365 Days. */},
 		})
+		exitIfErr(err)
 		app.Tc = tc
 		err = StartWorker(app)
 		exitIfErr(err)
@@ -116,7 +117,7 @@ func main() {
 
 			we, err := tc.ExecuteWorkflow(ctx, options, application.ReplicateWorkflowName, params)
 			if err != nil {
-				slog.Error("workflow launch failed", err)
+				slog.Error("workflow launch failed", "err", err)
 				continue
 			}
 			var result application.ReplicateWorkflowResult
@@ -155,7 +156,7 @@ func main() {
 
 			we, err := tc.ExecuteWorkflow(ctx, options, application.MoveWorkflowName, params)
 			if err != nil {
-				slog.Error("workflow launch failed", err)
+				slog.Error("workflow launch failed", "err", err)
 				continue
 			}
 			var result application.MoveWorkflowResult
@@ -169,6 +170,7 @@ func main() {
 	case "index":
 	case "export":
 		err = app.ExportReplication()
+		exitIfErr(err)
 	case "load-input":
 		for _, id := range UUIDs {
 			_, err := app.InitAIPInDatabase(context.Background(), id)

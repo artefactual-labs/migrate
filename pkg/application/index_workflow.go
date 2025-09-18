@@ -69,7 +69,7 @@ func (a *App) Index(ctx context.Context, params IndexWorkflowParams) (*IndexActi
 	}
 
 	e := StartEvent(ActionIndex)
-	var cmd *exec.Cmd = exec.Command(
+	cmd := exec.Command(
 		a.Config.Dashboard.PythonPath,
 		a.Config.Dashboard.ManagePath,
 		"rebuild_aip_index_from_storage_service",

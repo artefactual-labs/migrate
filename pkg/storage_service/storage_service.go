@@ -2,7 +2,6 @@ package storage_service
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -107,9 +106,4 @@ func (c *Client) Call(method, path string, reqBody, resPayload any) error {
 		return json.Unmarshal(body, resPayload)
 	}
 	return nil
-}
-
-func basicAuth(username, password string) string {
-	auth := username + ":" + password
-	return base64.StdEncoding.EncodeToString([]byte(auth))
 }

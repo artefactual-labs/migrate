@@ -68,6 +68,9 @@ func (w *MoveWorkflow) Run(ctx workflow.Context, params MoveWorkflowParams) (*Mo
 	moveParams := MoveActivityParams{UUID: params.UUID.String()}
 	moveResult := MoveActivityResult{}
 	err = workflow.ExecuteActivity(ctx, MoveActivityName, moveParams).Get(ctx, &moveResult)
+	if err != nil {
+		return nil, err
+	}
 
 	result.Message = "Status: " + moveResult.Status
 	return result, nil

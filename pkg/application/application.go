@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -135,7 +134,7 @@ func (a *App) Export() error {
 	PanicIfErr(err)
 	file, err := os.Create("report.csv")
 	PanicIfErr(err)
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
@@ -207,7 +206,7 @@ func (a *App) ExportReplication() error {
 	PanicIfErr(err)
 	file, err := os.Create("replication-report.csv")
 	PanicIfErr(err)
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
@@ -232,18 +231,7 @@ func (a *App) ExportReplication() error {
 
 	var totalSize uint64
 	for idx, aip := range aips {
-		errs := []string{}
-		events := []string{}
-		for _, e := range aip.R.Errors {
-			errs = append(errs, e.MSG)
-		}
-		for _, e := range aip.R.Events {
-			de := []string{}
-			err := json.Unmarshal([]byte(e.Details.GetOrZero()), &de)
-			PanicIfErr(err)
-			events = append(events, de...)
-		}
-
+		// TODO: aip.R.Events and aip.R.Errors?
 		totalSize += aip.Size.GetOrZero()
 		row := []string{
 			aip.UUID,
@@ -359,10 +347,6 @@ func ProcessUUIDInput(a *App, input []string) error {
 		return err
 	}
 	return nil
-}
-
-func baseDir(s string) string {
-	return s[0:5] // Comes in the form 3cdd/80e1/1d12/4486/acc8/830a/0eb0/9706/
 }
 
 func PanicIfErr(err error) {

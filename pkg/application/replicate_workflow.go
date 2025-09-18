@@ -324,7 +324,9 @@ func (a *App) FindA(ctx context.Context, params FindParams) (*FindResult, error)
 	if err != nil {
 		return nil, err
 	}
-	aip.Reload(ctx, a.DB)
+	if err := aip.Reload(ctx, a.DB); err != nil {
+		return nil, err
+	}
 	result.Size = FormatByteSize(aip.Size.GetOrZero())
 	result.Status = aip.Status
 	return result, nil

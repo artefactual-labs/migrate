@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"sort"
-	"time"
 
 	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
 )
@@ -93,23 +92,6 @@ import (
 //
 // 	return nil
 // }
-
-func calculateDuration(a *App, aip *models.Aip) {
-	a.reloadAIP(aip)
-	err := aip.LoadAipEvents(context.Background(), a.DB)
-	PanicIfErr(err)
-
-	var durationNanoSeconds int64
-	for _, e := range aip.R.Events {
-		durationNanoSeconds += e.TotalDurationNanoseconds.GetOrZero()
-	}
-	_ = time.Duration(durationNanoSeconds)
-	// err = aip.Update(context.Background(), a.DB, &models.AipSetter{
-	// 	TotalDuration:           omitnull.From(d.String()),
-	// 	TotalDurationNanosecond: omitnull.From(uint64(d.Nanoseconds())),
-	// })
-	PanicIfErr(err)
-}
 
 func (a *App) reloadAIP(aip *models.Aip) {
 	err := aip.Reload(context.Background(), a.DB)
