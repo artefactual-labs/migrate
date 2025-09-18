@@ -1,4 +1,4 @@
-module gitlab.artefactual.com/dcosme/migrate
+module github.com/artefactual-labs/migrate
 
 go 1.25.1
 

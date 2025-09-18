@@ -41,7 +41,7 @@ Before you can use this tool, you need:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://gitlab.artefactual.com/dcosme/migrate.git
+git clone https://github.com/artefactual-labs/migrate.git
 cd migrate
 ```
 

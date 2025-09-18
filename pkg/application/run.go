@@ -2,7 +2,7 @@ package application
 
 import (
 	"context"
-	"gitlab.artefactual.com/dcosme/migrate/pkg/database/gen/models"
+	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
 	"sort"
 	"time"
 )

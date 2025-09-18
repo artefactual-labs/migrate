@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"gitlab.artefactual.com/dcosme/migrate/pkg/application"
+	"github.com/artefactual-labs/migrate/pkg/application"
 	"os"
 )
 

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
-	"gitlab.artefactual.com/dcosme/migrate/pkg/database/gen/models"
+	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
 	"log/slog"
 	"time"
 )
