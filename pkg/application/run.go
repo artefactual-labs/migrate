@@ -93,8 +93,8 @@ import (
 // 	return nil
 // }
 
-func (a *App) reloadAIP(aip *models.Aip) {
-	err := aip.Reload(context.Background(), a.DB)
+func (a *App) reloadAIP(ctx context.Context, aip *models.Aip) {
+	err := aip.Reload(ctx, a.DB)
 	PanicIfErr(err)
 }
 

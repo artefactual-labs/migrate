@@ -2,6 +2,7 @@ package storage_service
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -63,7 +64,7 @@ func NewSSError(res *http.Response, body []byte, reqURL string) error {
 	return SSErr
 }
 
-func (c *Client) Call(method, path string, reqBody, resPayload any) error {
+func (c *Client) Call(ctx context.Context, method, path string, reqBody, resPayload any) error {
 	var bd io.Reader
 	if reqBody != nil {
 		// jsonBody, err := json.Marshal(reqBody)
@@ -74,7 +75,7 @@ func (c *Client) Call(method, path string, reqBody, resPayload any) error {
 	}
 
 	reqUrl := c.baseURL + path
-	req, err := http.NewRequest(method, reqUrl, bd)
+	req, err := http.NewRequestWithContext(ctx, method, reqUrl, bd)
 	if err != nil {
 		return err
 	}

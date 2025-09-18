@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -32,16 +33,16 @@ var (
 	ActionIndex     = Action{"index"}
 )
 
-func find(a *App, aips ...*models.Aip) error {
+func find(ctx context.Context, a *App, aips ...*models.Aip) error {
 	ssAPI := storage_service.NewAPI(a.Config.SSURL, a.Config.SSUserName, a.Config.SSAPIKey)
 	slog.Info(fmt.Sprintf("Finding %d AIPS", len(aips)))
 	for _, aip := range aips {
 		e := StartEvent(ActionFind)
-		ssPackage, err := ssAPI.Packages.GetByID(aip.UUID)
+		ssPackage, err := ssAPI.Packages.GetByID(ctx, aip.UUID)
 		if err != nil {
 			if errors.Is(err, storage_service.ErrNotFound) {
-				EndEventErr(a, e, aip, "AIP not found in Storage Service")
-				a.UpdateAIPStatus(aip.ID, AIPStatusNotFound)
+				EndEventErr(ctx, a, e, aip, "AIP not found in Storage Service")
+				a.UpdateAIPStatus(ctx, aip.ID, AIPStatusNotFound)
 				continue
 			}
 			return err
@@ -49,27 +50,27 @@ func find(a *App, aips ...*models.Aip) error {
 
 		slog.Info("AIP found", "UUID", ssPackage.UUID)
 		if ssPackage.Status == "Deleted" {
-			a.UpdateAIP(aip.ID,
+			a.UpdateAIP(ctx, aip.ID,
 				&models.AipSetter{
 					Found: omit.From(false),
 					Size:  omitnull.From(ssPackage.Size),
 				},
 			)
-			EndEvent(AIPStatusDeleted, a, e, aip)
+			EndEvent(ctx, AIPStatusDeleted, a, e, aip)
 		} else {
-			a.UpdateAIP(aip.ID,
+			a.UpdateAIP(ctx, aip.ID,
 				&models.AipSetter{
 					Found: omit.From(true),
 					Size:  omitnull.From(ssPackage.Size),
 				},
 			)
-			EndEvent(AIPStatusFound, a, e, aip)
+			EndEvent(ctx, AIPStatusFound, a, e, aip)
 		}
 	}
 	return nil
 }
 
-func move(a *App, aips ...*models.Aip) error {
+func move(ctx context.Context, a *App, aips ...*models.Aip) error {
 	ssAPI := storage_service.NewAPI(a.Config.SSURL, a.Config.SSUserName, a.Config.SSAPIKey)
 	for _, aip := range aips {
 		e := StartEvent(ActionMove)
@@ -79,22 +80,22 @@ func move(a *App, aips ...*models.Aip) error {
 			continue
 		}
 
-		ssPackage, err := ssAPI.Packages.GetByID(aip.UUID)
+		ssPackage, err := ssAPI.Packages.GetByID(ctx, aip.UUID)
 		if err != nil {
 			continue
 		}
 		if strings.Contains(ssPackage.CurrentLocation, a.Config.MoveLocationUUID) && ssPackage.Status == "UPLOADED" {
 			e.AddDetail("AIP already in the desired location")
-			EndEvent(AIPStatusMoved, a, e, aip)
+			EndEvent(ctx, AIPStatusMoved, a, e, aip)
 			continue
 		}
 
 		if aip.Status == string(AIPStatusMoving) {
 			slog.Info("AIP last know Status: moving")
 		} else {
-			err = ssAPI.Packages.Move(aip.UUID, a.Config.MoveLocationUUID)
+			err = ssAPI.Packages.Move(ctx, aip.UUID, a.Config.MoveLocationUUID)
 			if err != nil {
-				EndEventErr(a, e, aip, "MOVE operation failed: "+err.Error())
+				EndEventErr(ctx, a, e, aip, "MOVE operation failed: "+err.Error())
 				continue
 			}
 		}
@@ -105,24 +106,24 @@ func move(a *App, aips ...*models.Aip) error {
 			backoff.WithMaxInterval(2*time.Minute),
 		)
 		for moving {
-			ssPackage, err = ssAPI.Packages.GetByID(aip.UUID)
+			ssPackage, err = ssAPI.Packages.GetByID(ctx, aip.UUID)
 			if err != nil {
-				EndEventErr(a, e, aip, err.Error())
+				EndEventErr(ctx, a, e, aip, err.Error())
 				return err
 			}
 			if ssPackage.Status == "MOVING" {
-				a.UpdateAIPStatus(aip.ID, AIPStatusMoving)
+				a.UpdateAIPStatus(ctx, aip.ID, AIPStatusMoving)
 			} else if ssPackage.Status == "UPLOADED" && strings.Contains(ssPackage.CurrentLocation, a.Config.LocationUUID) {
-				a.UpdateAIP(aip.ID, &models.AipSetter{
+				a.UpdateAIP(ctx, aip.ID, &models.AipSetter{
 					CurrentLocation: omitnull.From(ssPackage.CurrentLocation),
 				})
-				EndEvent(AIPStatusMoved, a, e, aip)
+				EndEvent(ctx, AIPStatusMoved, a, e, aip)
 				b.Reset()
 				moving = false
 				continue
 			} else {
 				err := errors.New("Unexpected AIP Status: " + ssPackage.Status)
-				EndEventErr(a, e, aip, err.Error())
+				EndEventErr(ctx, a, e, aip, err.Error())
 				return err
 			}
 			timeBackOff := b.NextBackOff()

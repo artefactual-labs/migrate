@@ -166,7 +166,7 @@ const ReplicateAName = "Replicate-aip"
 func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*ReplicateResult, error) {
 	result := &ReplicateResult{}
 
-	aip, err := a.GetAIPByID(params.AipID)
+	aip, err := a.GetAIPByID(ctx, params.AipID)
 	if err != nil {
 		slog.Error(err.Error())
 		return nil, err
@@ -174,14 +174,14 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 
 	e := StartEvent(ActionReplicate)
 	ssAPI := storage_service.NewAPI(a.Config.SSURL, a.Config.SSUserName, a.Config.SSAPIKey)
-	ssPackage, err := ssAPI.Packages.GetByID(aip.UUID)
+	ssPackage, err := ssAPI.Packages.GetByID(ctx, aip.UUID)
 	if err != nil {
 		return nil, err
 	}
 	if strings.ToLower(ssPackage.Status) == "deleted" {
 		slog.Info("AIP has been deleted")
 		result.Status = string(AIPStatusDeleted)
-		EndEvent(AIPStatusDeleted, a, e, aip)
+		EndEvent(ctx, AIPStatusDeleted, a, e, aip)
 		return result, nil
 	}
 
@@ -240,7 +240,7 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 		result.Status = aipReplication.Status
 		return result, nil
 	}
-	a.UpdateAIPStatus(aip.ID, AIPStatusReplicationInProgress)
+	a.UpdateAIPStatus(ctx, aip.ID, AIPStatusReplicationInProgress)
 
 	// TODO(daniel): Mark AIP Replication as In Progress.
 	//		Add attempt ++1
@@ -257,10 +257,10 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 	slog.Info("Replicating AIP", "command", cmd.String())
 
 	if output, err := cmd.CombinedOutput(); err != nil {
-		a.updateReplicateAIPStatus(aipReplication, AIPReplicationStatusFailed)
+		a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusFailed)
 		e.AddDetail(string(output))
 		result.Details = append(result.Details, string(output))
-		EndEventErr(a, e, aip, err.Error())
+		EndEventErr(ctx, a, e, aip, err.Error())
 		return nil, err
 	} else {
 		e.AddDetail(string(output))
@@ -272,26 +272,26 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 			if strings.Contains(sentence, "New replicas created for 1 of 1 AIPs in location") {
 				// TODO(daniel): Mark AIP Replication as Replicated.
 				result.Status = string(AIPReplicationStatusFinished)
-				a.updateReplicateAIPStatus(aipReplication, AIPReplicationStatusFinished)
-				EndEventNoChange(a, e, aip)
+				a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusFinished)
+				EndEventNoChange(ctx, a, e, aip)
 			} else if strings.Contains(sentence, "New replicas created for 0 of 1 AIPs in location.") {
 				// TODO(daniel): Mark AIP Replication as Stalled/Unknown.
-				a.updateReplicateAIPStatus(aipReplication, AIPReplicationStatusUnknown)
+				a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusUnknown)
 				e.AddDetail("Not replicated")
-				EndEventErr(a, e, aip, sentence)
+				EndEventErr(ctx, a, e, aip, sentence)
 				return nil, err
 			} else if strings.Contains(sentence, "CommandError: No AIPs to replicate in location") {
 				// NOTE: In this case AIP has been deleted.
-				a.updateReplicateAIPStatus(aipReplication, AIPReplicationStatusFailed)
+				a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusFailed)
 				e.AddDetail("Not replicated")
-				EndEventErr(a, e, aip, sentence)
-				EndEvent(AIPStatusDeleted, a, e, aip)
+				EndEventErr(ctx, a, e, aip, sentence)
+				EndEvent(ctx, AIPStatusDeleted, a, e, aip)
 			}
 		} else {
 			// TODO(daniel): Mark AIP Replication as Stalled/Unknown.
-			a.updateReplicateAIPStatus(aipReplication, AIPReplicationStatusUnknown)
+			a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusUnknown)
 			slog.Info("Replication command returned", "output", string(output))
-			EndEventErr(a, e, aip, "Could not determine result of Replication")
+			EndEventErr(ctx, a, e, aip, "Could not determine result of Replication")
 			return nil, errors.New("could not determine result of replication")
 		}
 	}
@@ -311,7 +311,7 @@ const FindAName = "find-aip"
 
 func (a *App) FindA(ctx context.Context, params FindParams) (*FindResult, error) {
 	result := &FindResult{}
-	aip, err := a.GetAIPByID(params.AipID)
+	aip, err := a.GetAIPByID(ctx, params.AipID)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +320,7 @@ func (a *App) FindA(ctx context.Context, params FindParams) (*FindResult, error)
 		result.Size = FormatByteSize(aip.Size.GetOrZero())
 		return result, nil
 	}
-	err = find(a, aip)
+	err = find(ctx, a, aip)
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +358,7 @@ func (a *App) CheckReplicationStatus(ctx context.Context, params CheckReplicatio
 		}
 	}
 	if len(aip.R.AipReplications) == finishedCount {
-		a.UpdateAIPStatus(aip.ID, AIPStatusReplicated)
+		a.UpdateAIPStatus(ctx, aip.ID, AIPStatusReplicated)
 		return nil
 	}
 	return errors.New("cannot determine final status of replication")
@@ -367,7 +367,7 @@ func (a *App) CheckReplicationStatus(ctx context.Context, params CheckReplicatio
 func CheckSSConnectionA(ctx context.Context, config Config) error {
 	ssAPI := storage_service.NewAPI(config.SSURL, config.SSUserName, config.SSAPIKey)
 	for _, l := range config.ReplicationLocations {
-		loc, err := ssAPI.Location.Get(l.UUID)
+		loc, err := ssAPI.Location.Get(ctx, l.UUID)
 		if err != nil {
 			return fmt.Errorf("error connecting with the SS: %w", err)
 		}
@@ -377,8 +377,8 @@ func CheckSSConnectionA(ctx context.Context, config Config) error {
 	return nil
 }
 
-func (a *App) updateReplicateAIPStatus(aip *models.AipReplication, status AIPReplicationStatus) {
-	if err := aip.Update(context.Background(), a.DB, &models.AipReplicationSetter{
+func (a *App) updateReplicateAIPStatus(ctx context.Context, aip *models.AipReplication, status AIPReplicationStatus) {
+	if err := aip.Update(ctx, a.DB, &models.AipReplicationSetter{
 		Status: omit.From(string(status)),
 	}); err != nil {
 		slog.Error(err.Error())

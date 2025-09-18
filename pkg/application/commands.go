@@ -1,5 +1,7 @@
 package application
 
+import "context"
+
 // func (a *App) Replicate(input []string) error {
 // 	if err := CheckSSConnection(a); err != nil {
 // 		return err
@@ -28,27 +30,27 @@ package application
 // 	return err
 // }
 
-func (a *App) Move(input []string) error {
-	if err := CheckSSConnection(a); err != nil {
+func (a *App) Move(ctx context.Context, input []string) error {
+	if err := CheckSSConnection(ctx, a); err != nil {
 		return err
 	}
-	if err := ProcessUUIDInput(a, input); err != nil {
+	if err := ProcessUUIDInput(ctx, a, input); err != nil {
 		return err
 	}
 
-	aips, err := a.GetAIPsByStatus(AIPStatusNew)
+	aips, err := a.GetAIPsByStatus(ctx, AIPStatusNew)
 	if err != nil {
 		return err
 	}
-	if err := find(a, aips...); err != nil {
+	if err := find(ctx, a, aips...); err != nil {
 		return err
 	}
 
-	aips, err = a.GetAIPsByStatus(AIPStatusFound)
+	aips, err = a.GetAIPsByStatus(ctx, AIPStatusFound)
 	if err != nil {
 		return err
 	}
 
-	err = move(a, aips...)
+	err = move(ctx, a, aips...)
 	return err
 }

@@ -62,7 +62,7 @@ type IndexActivityResult struct{}
 func (a *App) Index(ctx context.Context, params IndexWorkflowParams) (*IndexActivityResult, error) {
 	result := &IndexActivityResult{}
 
-	aip, err := a.GetAIPByID(params.UUID.String())
+	aip, err := a.GetAIPByID(ctx, params.UUID.String())
 	if err != nil {
 		slog.Error(err.Error())
 		return nil, err
@@ -92,6 +92,6 @@ func (a *App) Index(ctx context.Context, params IndexWorkflowParams) (*IndexActi
 	)
 
 	// TODO(daniel): Finish implementation
-	EndEvent(AIPStatusIndexed, a, e, aip)
+	EndEvent(ctx, AIPStatusIndexed, a, e, aip)
 	return result, nil
 }

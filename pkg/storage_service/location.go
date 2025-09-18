@@ -1,6 +1,7 @@
 package storage_service
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 )
@@ -23,9 +24,9 @@ type Location struct {
 	UUID         string   `json:"uuid"`
 }
 
-func (s *LocationService) Get(id string) (*Location, error) {
+func (s *LocationService) Get(ctx context.Context, id string) (*Location, error) {
 	var loc *Location
 	path := fmt.Sprintf("/api/v2/location/%s", id)
-	err := s.client.Call(http.MethodGet, path, nil, &loc)
+	err := s.client.Call(ctx, http.MethodGet, path, nil, &loc)
 	return loc, err
 }

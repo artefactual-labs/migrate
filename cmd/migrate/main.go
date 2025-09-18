@@ -30,7 +30,7 @@ func main() {
 	slog.SetLogLoggerLevel(slog.LevelInfo)
 
 	ctx := context.Background()
-	db := initDatabase("migrate.db")
+	db := initDatabase(ctx, "migrate.db")
 	app := &application.App{}
 	app.DB = db
 
@@ -104,7 +104,7 @@ func main() {
 			params := application.ReplicateWorkflowParams{
 				UUID: id,
 			}
-			aip, err := app.GetAIPByID(id.String())
+			aip, err := app.GetAIPByID(ctx, id.String())
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				exitIfErr(err)
 			} else if aip != nil && aip.Status == string(application.AIPStatusReplicated) {
@@ -121,7 +121,7 @@ func main() {
 				continue
 			}
 			var result application.ReplicateWorkflowResult
-			err = we.Get(context.Background(), &result)
+			err = we.Get(ctx, &result)
 			if err != nil {
 				slog.Error("workflow execution failed", "error", err)
 				continue
@@ -143,7 +143,7 @@ func main() {
 			params := application.MoveWorkflowParams{
 				UUID: id,
 			}
-			aip, err := app.GetAIPByID(id.String())
+			aip, err := app.GetAIPByID(ctx, id.String())
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				exitIfErr(err)
 			} else if aip != nil && aip.Status == string(application.AIPStatusMoved) {
@@ -160,7 +160,7 @@ func main() {
 				continue
 			}
 			var result application.MoveWorkflowResult
-			err = we.Get(context.Background(), &result)
+			err = we.Get(ctx, &result)
 			if err != nil {
 				slog.Error("workflow execution failed", "error", err)
 				continue
@@ -169,31 +169,31 @@ func main() {
 		}
 	case "index":
 	case "export":
-		err = app.ExportReplication()
+		err = app.ExportReplication(ctx)
 		exitIfErr(err)
 	case "load-input":
 		for _, id := range UUIDs {
-			_, err := app.InitAIPInDatabase(context.Background(), id)
+			_, err := app.InitAIPInDatabase(ctx, id)
 			application.PanicIfErr(err)
 
-			_, err = app.FindA(context.Background(), application.FindParams{AipID: id.String()})
+			_, err = app.FindA(ctx, application.FindParams{AipID: id.String()})
 			application.PanicIfErr(err)
 		}
 
-		err = app.ExportReplication()
+		err = app.ExportReplication(ctx)
 		application.PanicIfErr(err)
 	}
 }
 
-func initDatabase(datasource string) bob.DB {
+func initDatabase(ctx context.Context, datasource string) bob.DB {
 	// Immediately connect to database
 	dbHandle, err := bob.Open("sqlite3", datasource)
 	exitIfErr(err)
-	err = dbHandle.PingContext(context.Background())
+	err = dbHandle.PingContext(ctx)
 	exitIfErr(err)
 	file, err := efs.EFS.ReadFile("migrations/schema.sql")
 	exitIfErr(err)
-	_, err = dbHandle.ExecContext(context.Background(), string(file))
+	_, err = dbHandle.ExecContext(ctx, string(file))
 	exitIfErr(err)
 	return dbHandle
 }

@@ -42,30 +42,30 @@ func StartEvent(a Action) Event {
 	}
 }
 
-func EndEvent(s AIPStatus, a *App, e Event, aip *models.Aip) {
+func EndEvent(ctx context.Context, s AIPStatus, a *App, e Event, aip *models.Aip) {
 	e.End = time.Now()
-	a.UpdateAIPStatus(aip.ID, s)
-	err := aip.InsertEvents(context.Background(), a.DB, EventToSetter(e))
+	a.UpdateAIPStatus(ctx, aip.ID, s)
+	err := aip.InsertEvents(ctx, a.DB, EventToSetter(e))
 	PanicIfErr(err)
 }
 
-func EndEventNoChange(a *App, e Event, aip *models.Aip) {
-	a.reloadAIP(aip)
-	EndEvent(AIPStatus(aip.Status), a, e, aip)
+func EndEventNoChange(ctx context.Context, a *App, e Event, aip *models.Aip) {
+	a.reloadAIP(ctx, aip)
+	EndEvent(ctx, AIPStatus(aip.Status), a, e, aip)
 }
 
-func EndEventErr(a *App, e Event, aip *models.Aip, err string) {
+func EndEventErr(ctx context.Context, a *App, e Event, aip *models.Aip, err string) {
 	e.End = time.Now()
-	a.AddAIPError(aip, err)
-	a.UpdateAIPStatus(aip.ID, AIPStatusFailed)
-	ee := aip.InsertEvents(context.Background(), a.DB, EventToSetter(e))
+	a.AddAIPError(ctx, aip, err)
+	a.UpdateAIPStatus(ctx, aip.ID, AIPStatusFailed)
+	ee := aip.InsertEvents(ctx, a.DB, EventToSetter(e))
 	PanicIfErr(ee)
 }
 
-func EndEventErrNoFailure(a *App, e Event, aip *models.Aip, err string) {
+func EndEventErrNoFailure(ctx context.Context, a *App, e Event, aip *models.Aip, err string) {
 	e.End = time.Now()
-	a.AddAIPError(aip, err)
-	ee := aip.InsertEvents(context.Background(), a.DB, EventToSetter(e))
+	a.AddAIPError(ctx, aip, err)
+	ee := aip.InsertEvents(ctx, a.DB, EventToSetter(e))
 	PanicIfErr(ee)
 }
 

@@ -12,15 +12,15 @@ type MoveActivityResult struct {
 }
 
 func (a *App) MoveA(ctx context.Context, params MoveActivityParams) (*MoveActivityResult, error) {
-	aip, err := a.GetAIPByID(params.UUID)
+	aip, err := a.GetAIPByID(ctx, params.UUID)
 	if err != nil {
 		return nil, err
 	}
-	err = move(a, aip)
+	err = move(ctx, a, aip)
 	if err != nil {
 		return nil, err
 	}
-	a.reloadAIP(aip)
+	a.reloadAIP(ctx, aip)
 	result := &MoveActivityResult{
 		Status: aip.Status,
 	}

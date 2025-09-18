@@ -129,7 +129,7 @@ func (a *App) RunDaemonBatch(input []string) error {
 }
 */
 
-func (a *App) Export() error {
+func (a *App) Export(ctx context.Context) error {
 	err := os.RemoveAll("report.csv")
 	PanicIfErr(err)
 	file, err := os.Create("report.csv")
@@ -158,7 +158,7 @@ func (a *App) Export() error {
 		"Errors",
 	}
 
-	q := models.Aips.Query(context.Background(), a.DB)
+	q := models.Aips.Query(ctx, a.DB)
 	q.Apply(models.ThenLoadAipErrors())
 	aips, err := q.All()
 
@@ -201,7 +201,7 @@ func (a *App) Export() error {
 	return nil
 }
 
-func (a *App) ExportReplication() error {
+func (a *App) ExportReplication(ctx context.Context) error {
 	err := os.RemoveAll("replication-report.csv")
 	PanicIfErr(err)
 	file, err := os.Create("replication-report.csv")
@@ -220,7 +220,7 @@ func (a *App) ExportReplication() error {
 		"Total Size",
 	}
 
-	q := models.Aips.Query(context.Background(), a.DB)
+	q := models.Aips.Query(ctx, a.DB)
 	q.Apply(models.ThenLoadAipErrors())
 	q.Apply(models.ThenLoadAipEvents())
 	aips, err := q.All()
@@ -255,18 +255,18 @@ func (a *App) ExportReplication() error {
 	return nil
 }
 
-func (a *App) GetAIPs() (models.AipSlice, error) {
-	return models.Aips.Query(context.Background(), a.DB).All()
+func (a *App) GetAIPs(ctx context.Context) (models.AipSlice, error) {
+	return models.Aips.Query(ctx, a.DB).All()
 }
 
-func (a *App) GetAIPByID(uuid string) (*models.Aip, error) {
-	q := models.Aips.Query(context.Background(), a.DB)
+func (a *App) GetAIPByID(ctx context.Context, uuid string) (*models.Aip, error) {
+	q := models.Aips.Query(ctx, a.DB)
 	q.Apply(models.SelectWhere.Aips.UUID.EQ(uuid))
 	return q.One()
 }
 
-func (a *App) GetAIPsByStatus(ss ...AIPStatus) (models.AipSlice, error) {
-	q := models.Aips.Query(context.Background(), a.DB)
+func (a *App) GetAIPsByStatus(ctx context.Context, ss ...AIPStatus) (models.AipSlice, error) {
+	q := models.Aips.Query(ctx, a.DB)
 	var args []string
 	for _, s := range ss {
 		args = append(args, string(s))
@@ -275,12 +275,12 @@ func (a *App) GetAIPsByStatus(ss ...AIPStatus) (models.AipSlice, error) {
 	return q.All()
 }
 
-func (a *App) UpdateAIP(id int32, setter *models.AipSetter) {
-	err := models.Aips.Update(context.Background(), a.DB, setter, &models.Aip{ID: id})
+func (a *App) UpdateAIP(ctx context.Context, id int32, setter *models.AipSetter) {
+	err := models.Aips.Update(ctx, a.DB, setter, &models.Aip{ID: id})
 	PanicIfErr(err)
 }
 
-func (a *App) UpdateAIPStatus(id int32, s AIPStatus) {
+func (a *App) UpdateAIPStatus(ctx context.Context, id int32, s AIPStatus) {
 	setter := &models.AipSetter{Status: omit.From(string(s))}
 	switch s {
 	case AIPStatusMoved:
@@ -295,7 +295,7 @@ func (a *App) UpdateAIPStatus(id int32, s AIPStatus) {
 		setter.FixityRun = omit.From(true)
 	}
 	err := models.Aips.Update(
-		context.Background(),
+		ctx,
 		a.DB,
 		setter,
 		&models.Aip{ID: id},
@@ -304,10 +304,10 @@ func (a *App) UpdateAIPStatus(id int32, s AIPStatus) {
 	slog.Info("AIP Updated", "AIPStatus", s)
 }
 
-func (a *App) AddAIPError(aip *models.Aip, msg string, details ...string) {
+func (a *App) AddAIPError(ctx context.Context, aip *models.Aip, msg string, details ...string) {
 	slog.Error(msg, "AIP ID", aip.UUID)
 	err := aip.InsertErrors(
-		context.Background(),
+		ctx,
 		a.DB,
 		&models.ErrorSetter{MSG: omit.FromCond(msg, msg != ""), Details: omitnull.From(strings.Join(details, "-"))},
 	)
@@ -330,7 +330,7 @@ func ValidateUUIDs(input []string) (uuids []uuid.UUID, err error) {
 	return uuids, nil
 }
 
-func ProcessUUIDInput(a *App, input []string) error {
+func ProcessUUIDInput(ctx context.Context, a *App, input []string) error {
 	uuids, err := ValidateUUIDs(input)
 	if err != nil {
 		return err
@@ -342,7 +342,7 @@ func ProcessUUIDInput(a *App, input []string) error {
 			Status: omit.From(string(AIPStatusNew)),
 		})
 	}
-	_, err = models.Aips.UpsertMany(context.Background(), a.DB, false, []string{"uuid"}, nil, setters...)
+	_, err = models.Aips.UpsertMany(ctx, a.DB, false, []string{"uuid"}, nil, setters...)
 	if err != nil {
 		return err
 	}
@@ -362,9 +362,9 @@ func formatBool(b bool) string {
 	return "Not Done"
 }
 
-func CheckSSConnection(a *App) error {
+func CheckSSConnection(ctx context.Context, a *App) error {
 	ssAPI := storage_service.NewAPI(a.Config.SSURL, a.Config.SSUserName, a.Config.SSAPIKey)
-	location, err := ssAPI.Location.Get(a.Config.LocationUUID)
+	location, err := ssAPI.Location.Get(ctx, a.Config.LocationUUID)
 	if err != nil {
 		return fmt.Errorf("error connecting with the SS: %w", err)
 	}
