@@ -1,5 +1,7 @@
-*.db
 .idea
+
+# Application assets.
 config.json
-input.txt
-/tmp
+*.db
+*.txt
+*.csv
