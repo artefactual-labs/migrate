@@ -132,6 +132,9 @@ Create an `input.txt` file containing the UUIDs of AIPs you want to process
 abcdef01-2345-6789-abcd-ef0123456789
 ```
 
+If you need to trim an existing UUID list before loading it, a small helper
+command lives in `cmd/list-filter`. See its README for usage details.
+
 ## Usage
 
 ### Start Temporal Server
