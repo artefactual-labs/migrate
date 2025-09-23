@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"os"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/stephenafamo/bob"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
@@ -19,6 +18,7 @@ import (
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 	"google.golang.org/protobuf/types/known/durationpb"
+	_ "modernc.org/sqlite"
 
 	"github.com/artefactual-labs/migrate/efs"
 	"github.com/artefactual-labs/migrate/pkg/application"
@@ -187,7 +187,7 @@ func main() {
 
 func initDatabase(ctx context.Context, datasource string) bob.DB {
 	// Immediately connect to database
-	dbHandle, err := bob.Open("sqlite3", datasource)
+	dbHandle, err := bob.Open("sqlite", datasource)
 	exitIfErr(err)
 	err = dbHandle.PingContext(ctx)
 	exitIfErr(err)
