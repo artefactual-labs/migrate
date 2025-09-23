@@ -5,3 +5,7 @@ config.json
 *.db
 *.txt
 *.csv
+
+# Binaries.
+/list-filter
+/migrate

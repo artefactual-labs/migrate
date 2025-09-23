@@ -16,10 +16,17 @@ endif
 # Configure bine.
 export PATH := $(shell go tool bine path):$(PATH)
 
+build: # @HELP Build migrate.
+	env CGO_ENABLED=0 go build -trimpath -o $(CURDIR)/migrate ./cmd/migrate
+
 fmt: # @HELP Format the project Go files with golangci-lint.
 fmt: FMT_FLAGS ?=
 fmt: tool-golangci-lint
 	golangci-lint fmt $(FMT_FLAGS)
+
+gen: # @HELP Generate code.
+gen: tool-bobgen-sqlite
+	bobgen-sqlite -c bobgen.yaml
 
 help: # @HELP Print this message.
 help:

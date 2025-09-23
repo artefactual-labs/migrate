@@ -6,6 +6,11 @@
       "url": "https://github.com/golangci/golangci-lint",
       "version": "2.5.0",
       "asset_pattern": "{name}-{version}-{goos}-{goarch}.tar.gz"
+    },
+    {
+      "name": "bobgen-sqlite",
+      "go_package": "github.com/stephenafamo/bob/gen/bobgen-sqlite",
+      "version": "0.41.1"
     }
   ]
 }
