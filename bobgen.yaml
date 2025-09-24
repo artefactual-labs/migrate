@@ -1,6 +1,15 @@
 sqlite:
-  dsn: "migrate.db"
-  output: "./pkg/database/gen/models"
+  dsn: migrate.db
 
-no_factory: True
-wipe: true
+plugins_preset: all
+plugins:
+  dbinfo:
+    destination: pkg/database/gen/dbinfo
+  enums:
+    destination: pkg/database/gen/enums
+  models:
+    destination: pkg/database/gen/models
+  dberrors:
+    destination: pkg/database/gen/dberrors
+  factory:
+    destination: pkg/database/gen/factory
