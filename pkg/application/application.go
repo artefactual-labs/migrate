@@ -229,7 +229,7 @@ func (a *App) ExportReplication(ctx context.Context) error {
 
 	data := make([][]string, len(aips)+1)
 
-	var totalSize uint64
+	var totalSize int64
 	for idx, aip := range aips {
 		// TODO: aip.R.Events and aip.R.Errors?
 		totalSize += aip.Size.GetOrZero()
@@ -274,12 +274,12 @@ func (a *App) GetAIPsByStatus(ctx context.Context, ss ...AIPStatus) (models.AipS
 	return q.All(ctx, a.DB)
 }
 
-func (a *App) UpdateAIP(ctx context.Context, id int32, setter *models.AipSetter) {
+func (a *App) UpdateAIP(ctx context.Context, id int64, setter *models.AipSetter) {
 	err := models.Aips.Update(ctx, a.DB, setter, &models.Aip{ID: id})
 	PanicIfErr(err)
 }
 
-func (a *App) UpdateAIPStatus(ctx context.Context, id int32, s AIPStatus) {
+func (a *App) UpdateAIPStatus(ctx context.Context, id int64, s AIPStatus) {
 	setter := &models.AipSetter{Status: omit.From(string(s))}
 	switch s {
 	case AIPStatusMoved:
@@ -371,15 +371,24 @@ func CheckSSConnection(ctx context.Context, a *App) error {
 	return nil
 }
 
-func FormatByteSize(b uint64) string {
+func FormatByteSize(b int64) string {
 	const unit = 1024
+
+	// Guard against negative inputs.
+	if b < 0 {
+		return "0 B"
+	}
+
+	// Bytes case.
 	if b < unit {
 		return fmt.Sprintf("%d B", b)
 	}
-	div, exp := uint64(unit), 0
+
+	div, exp := int64(unit), 0
 	for n := b / unit; n >= unit; n /= unit {
 		div *= unit
 		exp++
 	}
+
 	return fmt.Sprintf("%.1f %ciB", float64(b)/float64(div), "KMGTPE"[exp])
 }
