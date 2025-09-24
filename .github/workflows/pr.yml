@@ -21,15 +21,15 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Set lint cache bucket date
-        shell: bash
-        run: |
-          echo "DATE=$(date -u '+%Y-%m')" >> "$GITHUB_ENV"
+        run: echo "DATE=$(date -u '+%Y-%m')" >> "$GITHUB_ENV"
+      - name: Expose GOLANGCI_LINT_CACHE to env context
+        run: echo "GOLANGCI_LINT_CACHE=$HOME/.cache/golangci-lint" >> $GITHUB_ENV
       - name: Restore golangci-lint cache
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         timeout-minutes: 10
         continue-on-error: true
         with:
-          path: ${{ env.HOME }}/.cache/golangci-lint
+          path: ${{ env.GOLANGCI_LINT_CACHE }}
           key: ${{ runner.os }}-golangci-lint-cache-${{ env.DATE }}
           restore-keys: |
             ${{ runner.os }}-golangci-lint-cache-
