@@ -13,6 +13,7 @@ import (
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
 	"github.com/google/uuid"
+	"github.com/stephenafamo/bob/dialect/sqlite/im"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 
@@ -114,7 +115,10 @@ func (a *App) InitAIPInDatabase(ctx context.Context, id uuid.UUID) (*InitAIPInDa
 		UUID:   omit.From(id.String()),
 		Status: omit.From(string(AIPStatusNew)),
 	}
-	aip, err := models.Aips.Upsert(ctx, a.DB, false, []string{"uuid"}, nil, aipSetter)
+	aip, err := models.Aips.Insert(
+		aipSetter,
+		im.OnConflict("uuid").DoNothing(),
+	).One(ctx, a.DB)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			q := models.Aips.Query(models.SelectWhere.Aips.UUID.EQ(id.String()))
@@ -126,7 +130,7 @@ func (a *App) InitAIPInDatabase(ctx context.Context, id uuid.UUID) (*InitAIPInDa
 		}
 	}
 	result.Status = aip.Status
-	if err := aip.LoadAipAipReplications(ctx, a.DB); err != nil {
+	if err := aip.LoadAipReplications(ctx, a.DB); err != nil {
 		return nil, err
 	}
 	if aip.Status == string(AIPStatusNew) && len(aip.R.AipReplications) == 0 {
@@ -141,7 +145,7 @@ func (a *App) InitAIPInDatabase(ctx context.Context, id uuid.UUID) (*InitAIPInDa
 			}
 		}
 	}
-	if err := aip.LoadAipAipReplications(ctx, a.DB); err != nil {
+	if err := aip.LoadAipReplications(ctx, a.DB); err != nil {
 		return nil, err
 	}
 	for _, rl := range aip.R.AipReplications {

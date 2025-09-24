@@ -12,6 +12,7 @@ import (
 	"github.com/aarondl/opt/omitnull"
 	"github.com/google/uuid"
 	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/sqlite/im"
 	"go.temporal.io/sdk/client"
 
 	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
@@ -275,7 +276,10 @@ func (a *App) GetAIPsByStatus(ctx context.Context, ss ...AIPStatus) (models.AipS
 }
 
 func (a *App) UpdateAIP(ctx context.Context, id int64, setter *models.AipSetter) {
-	err := models.Aips.Update(ctx, a.DB, setter, &models.Aip{ID: id})
+	_, err := models.Aips.Update(
+		setter.UpdateMod(),
+		models.UpdateWhere.Aips.ID.EQ(id),
+	).Exec(ctx, a.DB)
 	PanicIfErr(err)
 }
 
@@ -293,12 +297,10 @@ func (a *App) UpdateAIPStatus(ctx context.Context, id int64, s AIPStatus) {
 	case AIPStatusFixityChecked:
 		setter.FixityRun = omit.From(true)
 	}
-	err := models.Aips.Update(
-		ctx,
-		a.DB,
-		setter,
-		&models.Aip{ID: id},
-	)
+	_, err := models.Aips.Update(
+		setter.UpdateMod(),
+		models.UpdateWhere.Aips.ID.EQ(id),
+	).Exec(ctx, a.DB)
 	PanicIfErr(err)
 	slog.Info("AIP Updated", "AIPStatus", s)
 }
@@ -341,11 +343,14 @@ func ProcessUUIDInput(ctx context.Context, a *App, input []string) error {
 			Status: omit.From(string(AIPStatusNew)),
 		})
 	}
-	_, err = models.Aips.UpsertMany(ctx, a.DB, false, []string{"uuid"}, nil, setters...)
-	if err != nil {
-		return err
+	if len(setters) == 0 {
+		return nil
 	}
-	return nil
+	_, err = models.Aips.Insert(
+		bob.ToMods(setters...),
+		im.OnConflict("uuid").DoNothing(),
+	).Exec(ctx, a.DB)
+	return err
 }
 
 func PanicIfErr(err error) {
