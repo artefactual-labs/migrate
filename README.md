@@ -82,11 +82,10 @@ Create a `config.json` file in the project root with the **actively used setting
       "name": "Backup Location 1"
     },
     {
-      "uuid": "location-2-uuid", 
+      "uuid": "location-2-uuid",
       "name": "Backup Location 2"
     }
   ],
-  "use_temporal": true,
   "environment": {
     "django_settings_module": "storage_service.settings.production",
     "django_secret_key": "your-secret-key",
@@ -231,7 +230,7 @@ detailed information about pausing and resuming operations, see the
    ```bash
    # For replication
    ./migrate replicate
-   
+
    # Or for moving
    ./migrate move
    ```
@@ -250,11 +249,6 @@ detailed information about pausing and resuming operations, see the
 **"missing command" error:**
 
 - Make sure you're providing a command: `./migrate replicate` (not just `./migrate`)
-
-**"cannot run this workflow without enabling temporal" error:**
-
-- Ensure `use_temporal: true` in your `config.json`
-- Check that Temporal server is running
 
 **Database errors:**
 
@@ -297,48 +291,13 @@ the main example. While these settings are **structurally valid** and can be
 included in your configuration, **most have no effect** on the current
 implementation:
 
-### Legacy/Deprecated Settings
-
-- **`replication_location_uuid`** - Superseded by the `replication_locations`
-  array which supports multiple destinations
-- **`elastic_search_url`** - Defined but not used in active functionality
-- **`staging_path`** - Defined but not used in active functionality  
-- **`local_copy_path`** - Defined but not used in active functionality
-
-### Feature Toggle Settings (Currently Inactive)
-
-- **`check_fixity`** - Can be set but functionality exists only in
-  commented-out code
-- **`move`** - Can be set but not used by current workflow logic
-- **`clean`** - Can be set but functionality exists only in commented-out code  
-- **`re_index`** - Can be set but not actively implemented
-- **`Replicate`** - Can be set but not used by current workflow logic
-
 ### Additional Dashboard Settings
 
-You can include additional dashboard configuration options beyond those shown in
-the main example. Some are planned but not yet implemented - these inactive
-settings exist as legacy code from earlier versions, placeholders for future
-functionality, or for environment compatibility but are not actively used:
-
-```json
-{
-  "dashboard": {
-    "elastic_search_timeout": "30",
-    "audit_log_middleware": "false", 
-    "prometheus_enabled": "false",
-    "email_host": "localhost",
-    "email_default_from": "noreply@example.com",
-    "time_zone": "UTC",
-    "search_enabled": "true",
-    "client_host": "localhost",
-    "client_database": "MCP",
-    "client_user": "archivematica",
-    "client_password": "demo", 
-    "requests_ca_bundle": ""
-  }
-}
-```
+The Temporal index workflow reads only the dashboard settings shown in the main
+example: manage path, Python path, locale, Django configuration, gunicorn bind
+address, Elasticsearch URL, and the storage-service client quick timeout. All
+other historical dashboard keys were removed with the legacy CLI code paths and
+are now ignored during unmarshalling.
 
 ## Pause and Resume Operations
 
@@ -370,8 +329,8 @@ To pause ongoing operations, run:
    ```bash
    # If you were running replication
    ./migrate replicate
-   
-   # If you were running moves  
+
+   # If you were running moves
    ./migrate move
    ```
 

@@ -1,28 +1,18 @@
 package application
 
 type Config struct {
-	SSURL                   string      `json:"ss_url"`
-	SSUserName              string      `json:"ss_user_name"`
-	SSAPIKey                string      `json:"ss_api_key"`
-	ReplicationLocationUUID string      `json:"replication_location_uuid"`
-	MoveLocationUUID        string      `json:"move_location_uuid"`
-	SSManagePath            string      `json:"ss_manage_path"`
-	ElasticSearchURL        string      `json:"elastic_search_url"`
-	PythonPath              string      `json:"python_path"`
-	LocationUUID            string      `json:"location_uuid"`
-	CheckFixity             bool        `json:"check_fixity"`
-	Move                    bool        `json:"move"`
-	Clean                   bool        `json:"clean"`
-	ReIndex                 bool        `json:"re_index"`
-	Replicate               bool        `json:"Replicate"`
-	StagingPath             string      `json:"staging_path"`
-	LocalCopyPath           string      `json:"local_copy_path"`
-	Docker                  bool        `json:"docker"`
-	SSContainerName         string      `json:"ss_container_name"`
-	ReplicationLocations    []Location  `json:"replication_locations"`
-	UseTemporal             bool        `json:"use_temporal"`
-	Environment             Environment `json:"environment"`
-	Dashboard               Dashboard   `json:"dashboard"`
+	SSURL                string      `json:"ss_url"`
+	SSUserName           string      `json:"ss_user_name"`
+	SSAPIKey             string      `json:"ss_api_key"`
+	MoveLocationUUID     string      `json:"move_location_uuid"`
+	SSManagePath         string      `json:"ss_manage_path"`
+	PythonPath           string      `json:"python_path"`
+	LocationUUID         string      `json:"location_uuid"`
+	Docker               bool        `json:"docker"`
+	SSContainerName      string      `json:"ss_container_name"`
+	ReplicationLocations []Location  `json:"replication_locations"`
+	Environment          Environment `json:"environment"`
+	Dashboard            Dashboard   `json:"dashboard"`
 }
 
 type Location struct {
@@ -55,17 +45,5 @@ type Dashboard struct {
 	DjangoSecretKey      string `json:"django_secret_key"`
 	GunicornBind         string `json:"gunicorn_bind"`
 	ElasticSearchServer  string `json:"elastic_search_url"`
-	ElasticSearchTimeout string `json:"elastic_search_timeout"`
 	SSClientQuickTimeout string `json:"ss_client_quick_timeout"`
-	AuditLogMiddleware   string `json:"audit_log_middleware"`
-	PrometheusEnabled    string `json:"prometheus_enabled"`
-	EmailHost            string `json:"email_host"`
-	EmailDefaultFrom     string `json:"email_default_from"`
-	TimeZone             string `json:"time_zone"`
-	SearchEnabled        string `json:"search_enabled"`
-	ClientHost           string `json:"client_host"`
-	ClientDatabase       string `json:"client_database"`
-	ClientUser           string `json:"client_user"`
-	ClientPassword       string `json:"client_password"`
-	RequestsCABundle     string `json:"requests_ca_bundle"`
 }

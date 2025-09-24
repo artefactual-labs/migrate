@@ -41,24 +41,18 @@ func main() {
 
 	// Connect with Temporal Server.
 	// TODO(daniel) make all these options configurable
-	var tc client.Client
-	if app.Config.UseTemporal {
-		tc, err = client.Dial(client.Options{Namespace: "move", Logger: slog.Default()})
-		exitIfErr(err)
-		nameSpaceClient, err := client.NewNamespaceClient(client.Options{Namespace: "move"})
-		exitIfErr(err)
-		err = nameSpaceClient.Register(ctx, &workflowservice.RegisterNamespaceRequest{
-			Namespace:                        "move",
-			WorkflowExecutionRetentionPeriod: &durationpb.Duration{Seconds: 31_536_000 /* 365 Days. */},
-		})
-		exitIfErr(err)
-		app.Tc = tc
-		err = StartWorker(app)
-		exitIfErr(err)
-	} else {
-		slog.Error("cannot run this workflow without enabling temporal")
-		os.Exit(1)
-	}
+	tc, err := client.Dial(client.Options{Namespace: "move", Logger: slog.Default()})
+	exitIfErr(err)
+	nameSpaceClient, err := client.NewNamespaceClient(client.Options{Namespace: "move"})
+	exitIfErr(err)
+	err = nameSpaceClient.Register(ctx, &workflowservice.RegisterNamespaceRequest{
+		Namespace:                        "move",
+		WorkflowExecutionRetentionPeriod: &durationpb.Duration{Seconds: 31_536_000 /* 365 Days. */},
+	})
+	exitIfErr(err)
+	app.Tc = tc
+	err = StartWorker(app)
+	exitIfErr(err)
 
 	var input []string
 	f, err := os.Open("input.txt")
