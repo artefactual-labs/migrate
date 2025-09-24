@@ -344,7 +344,7 @@ func (a *App) CheckReplicationStatus(ctx context.Context, params CheckReplicatio
 		a.DB,
 		models.SelectWhere.Aips.UUID.EQ(params.AIP_UUID),
 	)
-	q.Apply(models.ThenLoadAipAipReplications())
+	q.Apply(models.SelectThenLoad.Aip.AipReplications())
 	aip, err := q.One()
 	if err != nil {
 		return err

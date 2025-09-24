@@ -159,7 +159,7 @@ func (a *App) Export(ctx context.Context) error {
 	}
 
 	q := models.Aips.Query(ctx, a.DB)
-	q.Apply(models.ThenLoadAipErrors())
+	q.Apply(models.SelectThenLoad.Aip.Errors())
 	aips, err := q.All()
 
 	PanicIfErr(err)
@@ -221,8 +221,8 @@ func (a *App) ExportReplication(ctx context.Context) error {
 	}
 
 	q := models.Aips.Query(ctx, a.DB)
-	q.Apply(models.ThenLoadAipErrors())
-	q.Apply(models.ThenLoadAipEvents())
+	q.Apply(models.SelectThenLoad.Aip.Errors())
+	q.Apply(models.SelectThenLoad.Aip.Events())
 	aips, err := q.All()
 	PanicIfErr(err)
 	SortAips(aips)
