@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"strings"
 	"time"
 
@@ -49,11 +50,18 @@ func find(ctx context.Context, a *App, aips ...*models.Aip) error {
 		}
 
 		slog.Info("AIP found", "UUID", ssPackage.UUID)
+		sizeVal := omitnull.Val[int64]{}
+		if ssPackage.Size > math.MaxInt64 {
+			slog.Warn("package size exceeds supported range", "uuid", ssPackage.UUID, "size", ssPackage.Size)
+		} else {
+			sizeVal = omitnull.From(int64(ssPackage.Size))
+		}
+
 		if ssPackage.Status == "Deleted" {
 			a.UpdateAIP(ctx, aip.ID,
 				&models.AipSetter{
 					Found: omit.From(false),
-					Size:  omitnull.From(ssPackage.Size),
+					Size:  sizeVal,
 				},
 			)
 			EndEvent(ctx, AIPStatusDeleted, a, e, aip)
@@ -61,7 +69,7 @@ func find(ctx context.Context, a *App, aips ...*models.Aip) error {
 			a.UpdateAIP(ctx, aip.ID,
 				&models.AipSetter{
 					Found: omit.From(true),
-					Size:  omitnull.From(ssPackage.Size),
+					Size:  sizeVal,
 				},
 			)
 			EndEvent(ctx, AIPStatusFound, a, e, aip)
