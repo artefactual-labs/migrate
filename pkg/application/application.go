@@ -158,9 +158,9 @@ func (a *App) Export(ctx context.Context) error {
 		"Errors",
 	}
 
-	q := models.Aips.Query(ctx, a.DB)
+	q := models.Aips.Query()
 	q.Apply(models.SelectThenLoad.Aip.Errors())
-	aips, err := q.All()
+	aips, err := q.All(ctx, a.DB)
 
 	PanicIfErr(err)
 	data := make([][]string, len(aips))
@@ -220,10 +220,10 @@ func (a *App) ExportReplication(ctx context.Context) error {
 		"Total Size",
 	}
 
-	q := models.Aips.Query(ctx, a.DB)
+	q := models.Aips.Query()
 	q.Apply(models.SelectThenLoad.Aip.Errors())
 	q.Apply(models.SelectThenLoad.Aip.Events())
-	aips, err := q.All()
+	aips, err := q.All(ctx, a.DB)
 	PanicIfErr(err)
 	SortAips(aips)
 
@@ -256,23 +256,22 @@ func (a *App) ExportReplication(ctx context.Context) error {
 }
 
 func (a *App) GetAIPs(ctx context.Context) (models.AipSlice, error) {
-	return models.Aips.Query(ctx, a.DB).All()
+	return models.Aips.Query().All(ctx, a.DB)
 }
 
 func (a *App) GetAIPByID(ctx context.Context, uuid string) (*models.Aip, error) {
-	q := models.Aips.Query(ctx, a.DB)
-	q.Apply(models.SelectWhere.Aips.UUID.EQ(uuid))
-	return q.One()
+	q := models.Aips.Query(models.SelectWhere.Aips.UUID.EQ(uuid))
+	return q.One(ctx, a.DB)
 }
 
 func (a *App) GetAIPsByStatus(ctx context.Context, ss ...AIPStatus) (models.AipSlice, error) {
-	q := models.Aips.Query(ctx, a.DB)
+	q := models.Aips.Query()
 	var args []string
 	for _, s := range ss {
 		args = append(args, string(s))
 	}
 	q.Apply(models.SelectWhere.Aips.Status.In(args...))
-	return q.All()
+	return q.All(ctx, a.DB)
 }
 
 func (a *App) UpdateAIP(ctx context.Context, id int32, setter *models.AipSetter) {

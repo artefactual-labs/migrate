@@ -117,7 +117,8 @@ func (a *App) InitAIPInDatabase(ctx context.Context, id uuid.UUID) (*InitAIPInDa
 	aip, err := models.Aips.Upsert(ctx, a.DB, false, []string{"uuid"}, nil, aipSetter)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			if aip, err = models.Aips.Query(ctx, a.DB, models.SelectWhere.Aips.UUID.EQ(id.String())).One(); err != nil {
+			q := models.Aips.Query(models.SelectWhere.Aips.UUID.EQ(id.String()))
+			if aip, err = q.One(ctx, a.DB); err != nil {
 				return nil, err
 			}
 		} else {
@@ -228,11 +229,11 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 		)
 	}
 
-	aipReplication, err := models.AipReplications.Query(
-		ctx, a.DB,
+	q := models.AipReplications.Query(
 		models.SelectWhere.AipReplications.AipID.EQ(aip.ID),
 		models.SelectWhere.AipReplications.LocationUUID.EQ(params.ReplicaLocationUUID),
-	).One()
+	)
+	aipReplication, err := q.One(ctx, a.DB)
 	if err != nil {
 		return nil, err
 	}
@@ -340,12 +341,10 @@ type CheckReplicationStatusParams struct {
 
 func (a *App) CheckReplicationStatus(ctx context.Context, params CheckReplicationStatusParams) error {
 	q := models.Aips.Query(
-		ctx,
-		a.DB,
 		models.SelectWhere.Aips.UUID.EQ(params.AIP_UUID),
 	)
 	q.Apply(models.SelectThenLoad.Aip.AipReplications())
-	aip, err := q.One()
+	aip, err := q.One(ctx, a.DB)
 	if err != nil {
 		return err
 	}
