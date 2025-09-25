@@ -32,6 +32,8 @@ var (
 	ActionIndex     = Action{"index"}
 )
 
+// find checks if the AIPs exist in the Storage Service and updates their status
+// accordingly.
 func find(ctx context.Context, a *App, aips ...*models.Aip) error {
 	ssAPI := storage_service.NewAPI(a.Config.SSURL, a.Config.SSUserName, a.Config.SSAPIKey)
 	slog.Info(fmt.Sprintf("Finding %d AIPS", len(aips)))
@@ -76,6 +78,8 @@ func find(ctx context.Context, a *App, aips ...*models.Aip) error {
 	return nil
 }
 
+// move moves the AIPs to the desired location and updates their status
+// accordingly.
 func move(ctx context.Context, a *App, aips ...*models.Aip) error {
 	ssAPI := storage_service.NewAPI(a.Config.SSURL, a.Config.SSUserName, a.Config.SSAPIKey)
 	for _, aip := range aips {
