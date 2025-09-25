@@ -21,8 +21,8 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	_ "modernc.org/sqlite"
 
-	"github.com/artefactual-labs/migrate/efs"
 	"github.com/artefactual-labs/migrate/pkg/application"
+	"github.com/artefactual-labs/migrate/pkg/database/migrations"
 )
 
 func main() {
@@ -223,7 +223,7 @@ func initDatabase(ctx context.Context, datasource string) (db bob.DB, err error)
 	}
 
 	var file []byte
-	file, err = efs.EFS.ReadFile("migrations/schema.sql")
+	file, err = migrations.FS.ReadFile("schema.sql")
 	if err != nil {
 		return db, fmt.Errorf("read schema.sql: %v", err)
 	}
