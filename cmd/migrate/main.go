@@ -24,8 +24,6 @@ import (
 	"github.com/artefactual-labs/migrate/pkg/application"
 )
 
-var pause bool
-
 func main() {
 	slog.SetLogLoggerLevel(slog.LevelInfo)
 
@@ -72,6 +70,7 @@ func main() {
 		exitIfErr(errors.New("missing command"))
 	}
 	command = args[1]
+	var pause bool
 	switch command {
 	case "pause":
 		pause = true
