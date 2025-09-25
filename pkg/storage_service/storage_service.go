@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 )
 
@@ -92,7 +91,6 @@ func (c *Client) Call(ctx context.Context, method, path string, reqBody, resPayl
 	if res.Body != nil {
 		body, err = io.ReadAll(res.Body)
 		if err != nil {
-			slog.Error(err.Error())
 			return err
 		}
 	}
