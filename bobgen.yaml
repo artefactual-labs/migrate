@@ -4,12 +4,12 @@ sqlite:
 plugins_preset: all
 plugins:
   dbinfo:
-    destination: pkg/database/gen/dbinfo
+    destination: internal/database/gen/dbinfo
   enums:
-    destination: pkg/database/gen/enums
+    destination: internal/database/gen/enums
   models:
-    destination: pkg/database/gen/models
+    destination: internal/database/gen/models
   dberrors:
-    destination: pkg/database/gen/dberrors
+    destination: internal/database/gen/dberrors
   factory:
-    destination: pkg/database/gen/factory
+    destination: internal/database/gen/factory

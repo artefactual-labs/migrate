@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
+	"github.com/artefactual-labs/migrate/internal/database/gen/models"
 )
 
 func (a *App) reloadAIP(ctx context.Context, aip *models.Aip) {

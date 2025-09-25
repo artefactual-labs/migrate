@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/aarondl/opt/null"
-	models "github.com/artefactual-labs/migrate/pkg/database/gen/models"
+	models "github.com/artefactual-labs/migrate/internal/database/gen/models"
 )
 
 type Factory struct {

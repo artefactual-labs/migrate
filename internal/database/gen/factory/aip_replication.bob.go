@@ -10,7 +10,7 @@ import (
 	"github.com/aarondl/opt/null"
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
-	models "github.com/artefactual-labs/migrate/pkg/database/gen/models"
+	models "github.com/artefactual-labs/migrate/internal/database/gen/models"
 	"github.com/jaswdr/faker/v2"
 	"github.com/stephenafamo/bob"
 )

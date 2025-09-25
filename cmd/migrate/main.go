@@ -21,8 +21,8 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	_ "modernc.org/sqlite"
 
-	"github.com/artefactual-labs/migrate/pkg/application"
-	"github.com/artefactual-labs/migrate/pkg/database/migrations"
+	"github.com/artefactual-labs/migrate/internal/application"
+	"github.com/artefactual-labs/migrate/internal/database/migrations"
 )
 
 func main() {

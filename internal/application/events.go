@@ -9,7 +9,7 @@ import (
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
 
-	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
+	"github.com/artefactual-labs/migrate/internal/database/gen/models"
 )
 
 type Event struct {

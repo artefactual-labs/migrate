@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/artefactual-labs/migrate/pkg/application"
+	"github.com/artefactual-labs/migrate/internal/application"
 )
 
 func main() {

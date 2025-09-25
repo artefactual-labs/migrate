@@ -8,8 +8,8 @@ import (
 	"errors"
 	"testing"
 
-	factory "github.com/artefactual-labs/migrate/pkg/database/gen/factory"
-	models "github.com/artefactual-labs/migrate/pkg/database/gen/models"
+	factory "github.com/artefactual-labs/migrate/internal/database/gen/factory"
+	models "github.com/artefactual-labs/migrate/internal/database/gen/models"
 	"github.com/stephenafamo/bob"
 )
 

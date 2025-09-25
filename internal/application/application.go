@@ -15,8 +15,8 @@ import (
 	"github.com/stephenafamo/bob/dialect/sqlite/im"
 	"go.temporal.io/sdk/client"
 
-	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
-	"github.com/artefactual-labs/migrate/pkg/storage_service"
+	"github.com/artefactual-labs/migrate/internal/database/gen/models"
+	"github.com/artefactual-labs/migrate/internal/storage_service"
 )
 
 type App struct {

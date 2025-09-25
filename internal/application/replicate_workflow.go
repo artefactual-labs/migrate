@@ -17,8 +17,8 @@ import (
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 
-	"github.com/artefactual-labs/migrate/pkg/database/gen/models"
-	"github.com/artefactual-labs/migrate/pkg/storage_service"
+	"github.com/artefactual-labs/migrate/internal/database/gen/models"
+	"github.com/artefactual-labs/migrate/internal/storage_service"
 )
 
 const DEFAULT_TASKT_QUEUE = "default-task-queue"
