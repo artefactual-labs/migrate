@@ -99,15 +99,12 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 		return fmt.Errorf("validate UUIDs: %v", err)
 	}
 
-	var command string
 	if len(args) <= 1 {
 		return errors.New("missing command")
 	}
-	command = args[1]
-	var pause bool
+	command := args[1]
+
 	switch command {
-	case "pause":
-		pause = true //nolint:ineffassign
 	case "worker":
 		err := RunWorker(app)
 		if err != nil {
@@ -120,10 +117,6 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 		}
 
 		for _, id := range UUIDs {
-			if pause {
-				break
-			}
-
 			WorkflowID := fmt.Sprintf("AIP_Replicate_%s", id.String())
 			options := client.StartWorkflowOptions{
 				ID:                    WorkflowID,
@@ -159,10 +152,6 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 		}
 	case "move":
 		for _, id := range UUIDs {
-			if pause {
-				break
-			}
-
 			WorkflowID := fmt.Sprintf("AIP_Move_%s", id.String())
 			options := client.StartWorkflowOptions{
 				ID:                    WorkflowID,

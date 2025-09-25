@@ -192,16 +192,6 @@ This moves AIPs from source to destination location.
 
 This generates a CSV report (`report.csv`) showing the status of all processed AIPs.
 
-#### 6. Pause Operations
-
-```bash
-./migrate pause
-```
-
-This pauses ongoing operations (useful for stopping batch processes). For
-detailed information about pausing and resuming operations, see the
-[Pause and Resume Operations](#pause-and-resume-operations) section.
-
 ### Typical Workflow
 
 1. **Prepare your environment:**
@@ -281,7 +271,6 @@ detailed information about pausing and resuming operations, see the
 - This tool uses Temporal workflows for reliability and observability
 - Progress is tracked in a local SQLite database
 - The tool validates UUIDs before processing
-- Operations can be paused and resumed
 - All file operations use staging areas to prevent data loss
 
 ## Additional Configuration Options
@@ -298,70 +287,3 @@ example: manage path, Python path, locale, Django configuration, gunicorn bind
 address, Elasticsearch URL, and the storage-service client quick timeout. All
 other historical dashboard keys were removed with the legacy CLI code paths and
 are now ignored during unmarshalling.
-
-## Pause and Resume Operations
-
-The migration tool supports pausing and resuming batch operations to provide
-flexibility during long-running migration processes.
-
-### How Pause Works
-
-To pause ongoing operations, run:
-
-```bash
-./migrate pause
-```
-
-**Important notes about pausing:**
-
-- The pause command sets a flag that prevents new AIPs from being processed
-- It only takes effect **between** AIP processing iterations, not during the
-  processing of an individual AIP
-- Any AIP currently being processed will complete before the operation stops
-- The tool will stop processing additional AIPs from the input list
-
-### How to Resume Operations
-
-**There is no explicit resume command.** To resume operations after pausing:
-
-1. **Simply run the same command again:**
-
-   ```bash
-   # If you were running replication
-   ./migrate replicate
-
-   # If you were running moves
-   ./migrate move
-   ```
-
-2. **The tool automatically resumes where it left off** by:
-   - Checking the status of each AIP in the SQLite database (`migrate.db`)
-   - Skipping AIPs that have already been processed successfully
-   - Only processing AIPs that are still pending or failed
-
-### Resume Behavior
-
-When you restart a command, the tool will:
-
-- **For replication:** Skip AIPs with status `replicated`
-- **For moves:** Skip AIPs with status `moved`
-- **For all operations:** Skip AIPs with status `not-found` (AIPs that don't exist)
-- Continue processing from the next unprocessed AIP in your `input.txt` file
-
-### Example Workflow
-
-```bash
-# Start replication
-./migrate replicate
-
-# ... processing 50 AIPs ...
-# Press Ctrl+C or run in another terminal:
-./migrate pause
-
-# Later, resume where you left off
-./migrate replicate
-# Tool automatically skips the 50 already-processed AIPs and continues
-```
-
-This design ensures that no work is duplicated and you can safely resume
-operations at any time without losing progress.
