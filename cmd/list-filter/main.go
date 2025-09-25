@@ -81,7 +81,11 @@ func readLines(path string) ([]string, error) {
 
 	var lines []string
 	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
+		if scanner.Text() == "" {
+			continue // Ignore empty lines.
+		}
 		lines = append(lines, scanner.Text())
 	}
 
