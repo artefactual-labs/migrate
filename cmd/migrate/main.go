@@ -40,8 +40,10 @@ func main() {
 	}
 }
 
-func exec(ctx context.Context, args []string, _ io.Reader, _, _ io.Writer) (err error) {
-	slog.SetLogLoggerLevel(slog.LevelInfo)
+func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) (err error) {
+	loggerOpts := &slog.HandlerOptions{Level: slog.LevelInfo}
+	logger := slog.New(slog.NewTextHandler(stderr, loggerOpts))
+	slog.SetDefault(logger) // TODO: avoid global state.
 
 	db := initDatabase(ctx, "migrate.db")
 	app := &application.App{}
@@ -54,7 +56,7 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, _ io.Writer) (err 
 
 	// Connect with Temporal Server.
 	// TODO(daniel) make all these options configurable
-	tc, err := client.Dial(client.Options{Namespace: "move", Logger: slog.Default()})
+	tc, err := client.Dial(client.Options{Namespace: "move", Logger: logger})
 	exitIfErr(err)
 	nameSpaceClient, err := client.NewNamespaceClient(client.Options{Namespace: "move"})
 	exitIfErr(err)
