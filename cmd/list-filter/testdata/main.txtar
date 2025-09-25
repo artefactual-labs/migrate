@@ -1,0 +1,18 @@
+list-filter
+cmp stdout want_stdout.txt
+exec cat final_list.txt
+cmp stdout want_final_list.txt
+
+-- original_list.txt --
+6e1076b3-e79c-49c8-bbf5-850963596b3c
+717c698e-592c-4ee6-8a43-4617169e37eb
+c62aa7a2-91e9-4a6b-a759-363a08e8d6d2
+-- to_filter_out.txt --
+717c698e-592c-4ee6-8a43-4617169e37eb
+-- want_final_list.txt --
+6e1076b3-e79c-49c8-bbf5-850963596b3c
+c62aa7a2-91e9-4a6b-a759-363a08e8d6d2
+-- want_stdout.txt --
+Original Count: 3
+To Filter Count: 1
+Final Count: 2
