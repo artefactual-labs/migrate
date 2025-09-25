@@ -54,7 +54,7 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 	app.DB = db
 
 	if cfgFile, err := os.ReadFile("config.json"); err != nil {
-		return fmt.Errorf("read config.json: %v", err)
+		return err
 	} else if err := json.Unmarshal(cfgFile, &app.Config); err != nil {
 		return fmt.Errorf("unmarshal config.json: %v", err)
 	}

@@ -11,6 +11,7 @@ require (
 	go.temporal.io/api v1.43.2
 	go.temporal.io/sdk v1.32.1
 	google.golang.org/protobuf v1.36.6
+	gotest.tools/v3 v3.5.2
 	modernc.org/sqlite v1.39.0
 )
 
@@ -29,6 +30,7 @@ require (
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/renameio/v2 v2.0.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
