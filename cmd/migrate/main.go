@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 
@@ -25,9 +26,23 @@ import (
 )
 
 func main() {
+	var (
+		ctx    = context.Background()
+		args   = os.Args[1:]
+		stdin  = os.Stdin
+		stdout = os.Stdout
+		stderr = os.Stderr
+	)
+
+	if err := exec(ctx, args, stdin, stdout, stderr); err != nil {
+		fmt.Fprintf(stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func exec(ctx context.Context, args []string, _ io.Reader, _, _ io.Writer) (err error) {
 	slog.SetLogLoggerLevel(slog.LevelInfo)
 
-	ctx := context.Background()
 	db := initDatabase(ctx, "migrate.db")
 	app := &application.App{}
 	app.DB = db
@@ -65,7 +80,6 @@ func main() {
 	}
 
 	var command string
-	args := os.Args
 	if len(args) <= 1 {
 		exitIfErr(errors.New("missing command"))
 	}
@@ -176,6 +190,8 @@ func main() {
 		err = app.ExportReplication(ctx)
 		application.PanicIfErr(err)
 	}
+
+	return nil
 }
 
 func initDatabase(ctx context.Context, datasource string) bob.DB {
