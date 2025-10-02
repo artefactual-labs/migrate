@@ -10,9 +10,9 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-// TODO: migrate uses globals (slog.SetDefault), avoid t.Parallel() for now.
-
 func TestExecRequiresConfig(t *testing.T) {
+	t.Parallel()
+
 	var (
 		ctx    = context.Background()
 		stdin  = strings.NewReader("")

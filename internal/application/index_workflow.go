@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"log/slog"
 	"os/exec"
 	"time"
 
@@ -64,7 +63,6 @@ func (a *App) Index(ctx context.Context, params IndexWorkflowParams) (*IndexActi
 
 	aip, err := a.GetAIPByID(ctx, params.UUID.String())
 	if err != nil {
-		slog.Error(err.Error())
 		return nil, err
 	}
 

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log/slog"
 	"os/exec"
 	"strings"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/aarondl/opt/omitnull"
 	"github.com/google/uuid"
 	"github.com/stephenafamo/bob/dialect/sqlite/im"
+	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 
@@ -169,11 +169,12 @@ type ReplicateResult struct {
 const ReplicateAName = "Replicate-aip"
 
 func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*ReplicateResult, error) {
+	logger := activity.GetLogger(ctx)
 	result := &ReplicateResult{}
 
 	aip, err := a.GetAIPByID(ctx, params.AipID)
 	if err != nil {
-		slog.Error(err.Error())
+		logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -183,7 +184,7 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 		return nil, err
 	}
 	if strings.ToLower(ssPackage.Status) == "deleted" {
-		slog.Info("AIP has been deleted")
+		logger.Info("AIP has been deleted")
 		result.Status = string(AIPStatusDeleted)
 		EndEvent(ctx, AIPStatusDeleted, a, e, aip)
 		return result, nil
@@ -258,10 +259,12 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 	}
 
 	result.Command = cmd.String()
-	slog.Info("Replicating AIP", "command", cmd.String())
+	logger.Info("Replicating AIP", "command", cmd.String())
 
 	if output, err := cmd.CombinedOutput(); err != nil {
-		a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusFailed)
+		if updateErr := a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusFailed); updateErr != nil {
+			return nil, errors.Join(err, updateErr)
+		}
 		e.AddDetail(string(output))
 		result.Details = append(result.Details, string(output))
 		EndEventErr(ctx, a, e, aip, err.Error())
@@ -276,25 +279,33 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 			if strings.Contains(sentence, "New replicas created for 1 of 1 AIPs in location") {
 				// TODO(daniel): Mark AIP Replication as Replicated.
 				result.Status = string(AIPReplicationStatusFinished)
-				a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusFinished)
+				if err := a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusFinished); err != nil {
+					return nil, err
+				}
 				EndEventNoChange(ctx, a, e, aip)
 			} else if strings.Contains(sentence, "New replicas created for 0 of 1 AIPs in location.") {
 				// TODO(daniel): Mark AIP Replication as Stalled/Unknown.
-				a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusUnknown)
+				if err := a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusUnknown); err != nil {
+					return nil, err
+				}
 				e.AddDetail("Not replicated")
 				EndEventErr(ctx, a, e, aip, sentence)
 				return nil, err
 			} else if strings.Contains(sentence, "CommandError: No AIPs to replicate in location") {
 				// NOTE: In this case AIP has been deleted.
-				a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusFailed)
+				if err := a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusFailed); err != nil {
+					return nil, err
+				}
 				e.AddDetail("Not replicated")
 				EndEventErr(ctx, a, e, aip, sentence)
 				EndEvent(ctx, AIPStatusDeleted, a, e, aip)
 			}
 		} else {
 			// TODO(daniel): Mark AIP Replication as Stalled/Unknown.
-			a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusUnknown)
-			slog.Info("Replication command returned", "output", string(output))
+			if err := a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusUnknown); err != nil {
+				return nil, err
+			}
+			logger.Info("Replication command returned", "output", string(output))
 			EndEventErr(ctx, a, e, aip, "Could not determine result of Replication")
 			return nil, errors.New("could not determine result of replication")
 		}
@@ -321,17 +332,17 @@ func (a *App) FindA(ctx context.Context, params FindParams) (*FindResult, error)
 	}
 	result.Status = aip.Status
 	if aip.Status != string(AIPReplicationStatusNew) {
-		result.Size = FormatByteSize(aip.Size.GetOrZero())
+		result.Size = formatByteSize(aip.Size.GetOrZero())
 		return result, nil
 	}
-	err = find(ctx, a, a.StorageClient, aip)
+	err = find(ctx, a.logger, a, a.StorageClient, aip)
 	if err != nil {
 		return nil, err
 	}
 	if err := aip.Reload(ctx, a.DB); err != nil {
 		return nil, err
 	}
-	result.Size = FormatByteSize(aip.Size.GetOrZero())
+	result.Size = formatByteSize(aip.Size.GetOrZero())
 	result.Status = aip.Status
 	return result, nil
 }
@@ -343,6 +354,7 @@ type CheckReplicationStatusParams struct {
 }
 
 func (a *App) CheckReplicationStatus(ctx context.Context, params CheckReplicationStatusParams) error {
+	logger := activity.GetLogger(ctx)
 	q := models.Aips.Query(
 		models.SelectWhere.Aips.UUID.EQ(params.AIP_UUID),
 	)
@@ -354,7 +366,7 @@ func (a *App) CheckReplicationStatus(ctx context.Context, params CheckReplicatio
 
 	finishedCount := 0
 	for _, r := range aip.R.AipReplications {
-		slog.Info("AIP Replication", "Status", r.Status, "AIP UUID", aip.UUID)
+		logger.Info("AIP Replication", "Status", r.Status, "AIP UUID", aip.UUID)
 		if r.Status == string(AIPReplicationStatusFinished) {
 			finishedCount++
 		}
@@ -377,22 +389,23 @@ func NewCheckStorageServiceConnectionActivity(storageClient *storage_service.API
 }
 
 func (a *CheckStorageServiceConnectionActivity) Execute(ctx context.Context, config Config) error {
+	logger := activity.GetLogger(ctx)
 	for _, l := range config.ReplicationLocations {
 		loc, err := a.StorageClient.Location.Get(ctx, l.UUID)
 		if err != nil {
 			return fmt.Errorf("error connecting with the SS: %w", err)
 		}
-		slog.Info("Location found: " + loc.Description + "- Purpose: " + loc.Purpose)
+		logger.Info("Location found: " + loc.Description + "- Purpose: " + loc.Purpose)
 	}
-	slog.Info("Connection to SS working")
+	logger.Info("Connection to SS working")
 	return nil
 }
 
-func (a *App) updateReplicateAIPStatus(ctx context.Context, aip *models.AipReplication, status AIPReplicationStatus) {
+func (a *App) updateReplicateAIPStatus(ctx context.Context, aip *models.AipReplication, status AIPReplicationStatus) error {
 	if err := aip.Update(ctx, a.DB, &models.AipReplicationSetter{
 		Status: omit.From(string(status)),
 	}); err != nil {
-		slog.Error(err.Error())
-		panic(err)
+		return err
 	}
+	return nil
 }

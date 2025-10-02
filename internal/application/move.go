@@ -16,7 +16,7 @@ func (a *App) MoveA(ctx context.Context, params MoveActivityParams) (*MoveActivi
 	if err != nil {
 		return nil, err
 	}
-	err = move(ctx, a, a.StorageClient, aip)
+	err = move(ctx, a.logger, a, a.StorageClient, aip)
 	if err != nil {
 		return nil, err
 	}

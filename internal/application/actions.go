@@ -34,8 +34,8 @@ var (
 
 // find checks if the AIPs exist in the Storage Service and updates their status
 // accordingly.
-func find(ctx context.Context, a *App, storageClient *storage_service.API, aips ...*models.Aip) error {
-	slog.Info(fmt.Sprintf("Finding %d AIPS", len(aips)))
+func find(ctx context.Context, logger *slog.Logger, a *App, storageClient *storage_service.API, aips ...*models.Aip) error {
+	logger.Info(fmt.Sprintf("Finding %d AIPS", len(aips)))
 	for _, aip := range aips {
 		e := StartEvent(ActionFind)
 		ssPackage, err := storageClient.Packages.GetByID(ctx, aip.UUID)
@@ -48,10 +48,10 @@ func find(ctx context.Context, a *App, storageClient *storage_service.API, aips 
 			return err
 		}
 
-		slog.Info("AIP found", "UUID", ssPackage.UUID)
+		logger.Info("AIP found", "UUID", ssPackage.UUID)
 		sizeVal := omitnull.Val[int64]{}
 		if ssPackage.Size > math.MaxInt64 {
-			slog.Warn("package size exceeds supported range", "uuid", ssPackage.UUID, "size", ssPackage.Size)
+			logger.Warn("package size exceeds supported range", "uuid", ssPackage.UUID, "size", ssPackage.Size)
 		} else {
 			sizeVal = omitnull.From(int64(ssPackage.Size))
 		}
@@ -79,7 +79,7 @@ func find(ctx context.Context, a *App, storageClient *storage_service.API, aips 
 
 // move moves the AIPs to the desired location and updates their status
 // accordingly.
-func move(ctx context.Context, a *App, storageClient *storage_service.API, aips ...*models.Aip) error {
+func move(ctx context.Context, logger *slog.Logger, a *App, storageClient *storage_service.API, aips ...*models.Aip) error {
 	for _, aip := range aips {
 		e := StartEvent(ActionMove)
 		e.AddDetail(fmt.Sprintf("Moving: %s", aip.UUID))
@@ -99,7 +99,7 @@ func move(ctx context.Context, a *App, storageClient *storage_service.API, aips 
 		}
 
 		if aip.Status == string(AIPStatusMoving) {
-			slog.Info("AIP last know Status: moving")
+			logger.Info("AIP last know Status: moving")
 		} else {
 			err = storageClient.Packages.Move(ctx, aip.UUID, a.Config.MoveLocationUUID)
 			if err != nil {
@@ -135,7 +135,7 @@ func move(ctx context.Context, a *App, storageClient *storage_service.API, aips 
 				return err
 			}
 			timeBackOff := b.NextBackOff()
-			slog.Info("Will check again in: " + timeBackOff.String())
+			logger.Info("Will check again in: " + timeBackOff.String())
 			time.Sleep(timeBackOff)
 		}
 	}

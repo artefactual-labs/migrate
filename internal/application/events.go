@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"time"
 
 	"github.com/aarondl/opt/omit"
@@ -21,7 +20,6 @@ type Event struct {
 }
 
 func (e *Event) AddDetail(s string) {
-	slog.Info(e.Action.String(), "msg", s)
 	e.Details = append(e.Details, s)
 }
 

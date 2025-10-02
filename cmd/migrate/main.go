@@ -45,29 +45,26 @@ func main() {
 func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) (err error) {
 	loggerOpts := &slog.HandlerOptions{Level: slog.LevelInfo}
 	logger := slog.New(slog.NewTextHandler(stderr, loggerOpts))
-	slog.SetDefault(logger) // TODO: avoid global state.
 
-	app := &application.App{}
+	config := application.Config{}
+	if cfgFile, err := os.ReadFile("config.json"); err != nil {
+		return err
+	} else if err := json.Unmarshal(cfgFile, &config); err != nil {
+		return fmt.Errorf("unmarshal config.json: %v", err)
+	}
 
 	db, err := initDatabase(ctx, "migrate.db")
 	if err != nil {
 		return err
 	}
 
-	app.DB = db
-
-	if cfgFile, err := os.ReadFile("config.json"); err != nil {
-		return err
-	} else if err := json.Unmarshal(cfgFile, &app.Config); err != nil {
-		return fmt.Errorf("unmarshal config.json: %v", err)
-	}
-
-	app.StorageClient = storage_service.NewAPI(http.DefaultClient, app.Config.SSURL, app.Config.SSUserName, app.Config.SSAPIKey)
+	storageClient := storage_service.NewAPI(http.DefaultClient, config.SSURL, config.SSUserName, config.SSAPIKey)
 
 	// Connect with Temporal Server.
 	// TODO(daniel): make all these options configurable.
 	// TODO: push namespace registration to deployment.
 	const temporalNamespace = "move"
+	var temporalClient client.Client
 	if tc, err := client.Dial(client.Options{
 		Namespace: temporalNamespace,
 		Logger:    logger,
@@ -83,10 +80,13 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 	}); err != nil {
 		return fmt.Errorf("register namespace: %v", err)
 	} else {
-		app.Tc = tc
-		if err := StartWorker(app); err != nil {
-			return fmt.Errorf("start worker: %v", err)
-		}
+		temporalClient = tc
+	}
+
+	app := application.New(logger, db, config, temporalClient, storageClient)
+
+	if err := StartWorker(app); err != nil {
+		return fmt.Errorf("start worker: %v", err)
 	}
 
 	var input []string
@@ -116,9 +116,9 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 			return fmt.Errorf("run worker: %v", err)
 		}
 	case "replicate":
-		slog.Info("Starting Replication")
+		logger.Info("Starting Replication")
 		for _, l := range app.Config.ReplicationLocations {
-			slog.Info(fmt.Sprintf("Location Name %s, UUID: %s", l.Name, l.UUID))
+			logger.Info(fmt.Sprintf("Location Name %s, UUID: %s", l.Name, l.UUID))
 		}
 
 		for _, id := range UUIDs {
@@ -135,25 +135,25 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				return fmt.Errorf("get AIP by ID: %v", err)
 			} else if aip != nil && aip.Status == string(application.AIPStatusReplicated) {
-				slog.Info("AIP Already Replicated")
+				logger.Info("AIP Already Replicated")
 				continue
 			} else if aip != nil && aip.Status == string(application.AIPStatusNotFound) {
-				slog.Info("AIP Not Found")
+				logger.Info("AIP Not Found")
 				continue
 			}
 
 			we, err := app.Tc.ExecuteWorkflow(ctx, options, application.ReplicateWorkflowName, params)
 			if err != nil {
-				slog.Error("workflow launch failed", "err", err)
+				logger.Error("workflow launch failed", "err", err)
 				continue
 			}
 			var result application.ReplicateWorkflowResult
 			err = we.Get(ctx, &result)
 			if err != nil {
-				slog.Error("workflow execution failed", "error", err)
+				logger.Error("workflow execution failed", "error", err)
 				continue
 			}
-			slog.Info("workflow", "ID", we.GetID())
+			logger.Info("workflow", "ID", we.GetID())
 		}
 	case "move":
 		for _, id := range UUIDs {
@@ -170,25 +170,25 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				return fmt.Errorf("get AIP by ID: %v", err)
 			} else if aip != nil && aip.Status == string(application.AIPStatusMoved) {
-				slog.Info("AIP Already Moved")
+				logger.Info("AIP Already Moved")
 				continue
 			} else if aip != nil && aip.Status == string(application.AIPStatusNotFound) {
-				slog.Info("AIP Not Found")
+				logger.Info("AIP Not Found")
 				continue
 			}
 
 			we, err := app.Tc.ExecuteWorkflow(ctx, options, application.MoveWorkflowName, params)
 			if err != nil {
-				slog.Error("workflow launch failed", "err", err)
+				logger.Error("workflow launch failed", "err", err)
 				continue
 			}
 			var result application.MoveWorkflowResult
 			err = we.Get(ctx, &result)
 			if err != nil {
-				slog.Error("workflow execution failed", "error", err)
+				logger.Error("workflow execution failed", "error", err)
 				continue
 			}
-			slog.Info("workflow", "ID", we.GetID())
+			logger.Info("workflow", "ID", we.GetID())
 		}
 	case "index":
 	case "export":

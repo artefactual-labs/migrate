@@ -12,7 +12,6 @@ import (
 	"github.com/aarondl/opt/omitnull"
 	"github.com/google/uuid"
 	"github.com/stephenafamo/bob"
-	"github.com/stephenafamo/bob/dialect/sqlite/im"
 	"go.temporal.io/sdk/client"
 
 	"github.com/artefactual-labs/migrate/internal/database/gen/models"
@@ -20,12 +19,23 @@ import (
 )
 
 type App struct {
+	logger *slog.Logger
 	DB     bob.DB
 	Config Config
 	Tc     client.Client
 
 	// A client to interact with the Storage Service API.
 	StorageClient *storage_service.API
+}
+
+func New(logger *slog.Logger, db bob.DB, cfg Config, temporalClient client.Client, storageClient *storage_service.API) *App {
+	return &App{
+		logger:        logger,
+		DB:            db,
+		Config:        cfg,
+		Tc:            temporalClient,
+		StorageClient: storageClient,
+	}
 }
 
 type AIPStatus string
@@ -107,7 +117,7 @@ func (a *App) Export(ctx context.Context) error {
 			formatBool(aip.Cleaned),
 			formatBool(aip.Replicated),
 			formatBool(aip.ReIndexed),
-			FormatByteSize(aip.Size.GetOrZero()),
+			formatByteSize(aip.Size.GetOrZero()),
 			// fmt.Sprintf("%d", aip.TotalDurationNanosecond.GetOrZero()),
 			// aip.NewFullPath.GetOrZero(),
 			// aip.OldFullPath.GetOrZero(),
@@ -125,7 +135,7 @@ func (a *App) Export(ctx context.Context) error {
 		err = writer.Write(row)
 		PanicIfErr(err)
 	}
-	slog.Info("Success!")
+	a.logger.Info("Success!")
 	return nil
 }
 
@@ -165,13 +175,13 @@ func (a *App) ExportReplication(ctx context.Context) error {
 			aip.UUID,
 			aip.Status,
 			aip.CurrentLocation.GetOrZero(),
-			FormatByteSize(aip.Size.GetOrZero()),
+			formatByteSize(aip.Size.GetOrZero()),
 			fmt.Sprintf("%d", aip.Size.GetOrZero()),
 		}
 
 		data[idx] = row
 	}
-	data[len(aips)] = []string{"", "", "", "", FormatByteSize(totalSize)}
+	data[len(aips)] = []string{"", "", "", "", formatByteSize(totalSize)}
 
 	err = writer.Write(headers)
 	PanicIfErr(err)
@@ -179,7 +189,7 @@ func (a *App) ExportReplication(ctx context.Context) error {
 		err = writer.Write(row)
 		PanicIfErr(err)
 	}
-	slog.Info("Success!")
+	a.logger.Info("Success!")
 	return nil
 }
 
@@ -229,55 +239,30 @@ func (a *App) UpdateAIPStatus(ctx context.Context, id int64, s AIPStatus) {
 		models.UpdateWhere.Aips.ID.EQ(id),
 	).Exec(ctx, a.DB)
 	PanicIfErr(err)
-	slog.Info("AIP Updated", "AIPStatus", s)
+	a.logger.Info("AIP Updated", "AIPStatus", s)
 }
 
 func (a *App) AddAIPError(ctx context.Context, aip *models.Aip, msg string, details ...string) {
-	slog.Error(msg, "AIP ID", aip.UUID)
+	a.logger.Error(msg, "AIP ID", aip.UUID)
 	err := aip.InsertErrors(
 		ctx,
 		a.DB,
 		&models.ErrorSetter{MSG: omit.FromCond(msg, msg != ""), Details: omitnull.From(strings.Join(details, "-"))},
 	)
 	if err != nil {
-		slog.Error("failed persisting error", "err", err.Error(), "aip_UUID", aip.UUID)
+		a.logger.Error("failed persisting error", "err", err.Error(), "aip_UUID", aip.UUID)
 	}
 }
 
 func ValidateUUIDs(input []string) (uuids []uuid.UUID, err error) {
-	slog.Info("validating uuids", "amount", len(input))
-	for idx, id := range input {
+	for _, id := range input {
 		res, err := uuid.Parse(id)
 		if err != nil {
-			slog.Error("invalid UUID", "uuid", id, "error", err.Error(), "index", idx)
 			return nil, err
 		}
 		uuids = append(uuids, res)
 	}
-	slog.Info("All UUIDs are valid")
 	return uuids, nil
-}
-
-func ProcessUUIDInput(ctx context.Context, a *App, input []string) error {
-	uuids, err := ValidateUUIDs(input)
-	if err != nil {
-		return err
-	}
-	var setters []*models.AipSetter
-	for _, id := range uuids {
-		setters = append(setters, &models.AipSetter{
-			UUID:   omit.From(id.String()),
-			Status: omit.From(string(AIPStatusNew)),
-		})
-	}
-	if len(setters) == 0 {
-		return nil
-	}
-	_, err = models.Aips.Insert(
-		bob.ToMods(setters...),
-		im.OnConflict("uuid").DoNothing(),
-	).Exec(ctx, a.DB)
-	return err
 }
 
 func PanicIfErr(err error) {
@@ -293,7 +278,7 @@ func formatBool(b bool) string {
 	return "Not Done"
 }
 
-func FormatByteSize(b int64) string {
+func formatByteSize(b int64) string {
 	const unit = 1024
 
 	// Guard against negative inputs.
