@@ -69,9 +69,13 @@ const (
 
 func (a *App) Export(ctx context.Context) error {
 	err := os.RemoveAll("report.csv")
-	PanicIfErr(err)
+	if err != nil {
+		return err
+	}
 	file, err := os.Create("report.csv")
-	PanicIfErr(err)
+	if err != nil {
+		return err
+	}
 	defer file.Close() //nolint:errcheck
 
 	writer := csv.NewWriter(file)
@@ -99,8 +103,10 @@ func (a *App) Export(ctx context.Context) error {
 	q := models.Aips.Query()
 	q.Apply(models.SelectThenLoad.Aip.Errors())
 	aips, err := q.All(ctx, a.DB)
+	if err != nil {
+		return err
+	}
 
-	PanicIfErr(err)
 	data := make([][]string, len(aips))
 	for idx, aip := range aips {
 		errs := []string{}
@@ -130,10 +136,15 @@ func (a *App) Export(ctx context.Context) error {
 	}
 
 	err = writer.Write(headers)
-	PanicIfErr(err)
+	if err != nil {
+		return err
+	}
+
 	for _, row := range data {
 		err = writer.Write(row)
-		PanicIfErr(err)
+		if err != nil {
+			return err
+		}
 	}
 	a.logger.Info("Success!")
 	return nil
@@ -141,9 +152,15 @@ func (a *App) Export(ctx context.Context) error {
 
 func (a *App) ExportReplication(ctx context.Context) error {
 	err := os.RemoveAll("replication-report.csv")
-	PanicIfErr(err)
+	if err != nil {
+		return err
+	}
+
 	file, err := os.Create("replication-report.csv")
-	PanicIfErr(err)
+	if err != nil {
+		return err
+	}
+
 	defer file.Close() //nolint:errcheck
 
 	writer := csv.NewWriter(file)
@@ -162,7 +179,9 @@ func (a *App) ExportReplication(ctx context.Context) error {
 	q.Apply(models.SelectThenLoad.Aip.Errors())
 	q.Apply(models.SelectThenLoad.Aip.Events())
 	aips, err := q.All(ctx, a.DB)
-	PanicIfErr(err)
+	if err != nil {
+		return err
+	}
 	SortAips(aips)
 
 	data := make([][]string, len(aips)+1)
@@ -184,10 +203,14 @@ func (a *App) ExportReplication(ctx context.Context) error {
 	data[len(aips)] = []string{"", "", "", "", formatByteSize(totalSize)}
 
 	err = writer.Write(headers)
-	PanicIfErr(err)
+	if err != nil {
+		return err
+	}
 	for _, row := range data {
 		err = writer.Write(row)
-		PanicIfErr(err)
+		if err != nil {
+			return err
+		}
 	}
 	a.logger.Info("Success!")
 	return nil
@@ -212,15 +235,16 @@ func (a *App) GetAIPsByStatus(ctx context.Context, ss ...AIPStatus) (models.AipS
 	return q.All(ctx, a.DB)
 }
 
-func (a *App) UpdateAIP(ctx context.Context, id int64, setter *models.AipSetter) {
+func (a *App) UpdateAIP(ctx context.Context, id int64, setter *models.AipSetter) error {
 	_, err := models.Aips.Update(
 		setter.UpdateMod(),
 		models.UpdateWhere.Aips.ID.EQ(id),
 	).Exec(ctx, a.DB)
-	PanicIfErr(err)
+
+	return err
 }
 
-func (a *App) UpdateAIPStatus(ctx context.Context, id int64, s AIPStatus) {
+func (a *App) UpdateAIPStatus(ctx context.Context, id int64, s AIPStatus) error {
 	setter := &models.AipSetter{Status: omit.From(string(s))}
 	switch s {
 	case AIPStatusMoved:
@@ -238,8 +262,11 @@ func (a *App) UpdateAIPStatus(ctx context.Context, id int64, s AIPStatus) {
 		setter.UpdateMod(),
 		models.UpdateWhere.Aips.ID.EQ(id),
 	).Exec(ctx, a.DB)
-	PanicIfErr(err)
+	if err != nil {
+		return err
+	}
 	a.logger.Info("AIP Updated", "AIPStatus", s)
+	return nil
 }
 
 func (a *App) AddAIPError(ctx context.Context, aip *models.Aip, msg string, details ...string) {
@@ -263,12 +290,6 @@ func ValidateUUIDs(input []string) (uuids []uuid.UUID, err error) {
 		uuids = append(uuids, res)
 	}
 	return uuids, nil
-}
-
-func PanicIfErr(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
 
 func formatBool(b bool) string {

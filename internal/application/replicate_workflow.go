@@ -186,7 +186,9 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 	if strings.ToLower(ssPackage.Status) == "deleted" {
 		logger.Info("AIP has been deleted")
 		result.Status = string(AIPStatusDeleted)
-		EndEvent(ctx, AIPStatusDeleted, a, e, aip)
+		if eventErr := EndEvent(ctx, AIPStatusDeleted, a, e, aip); eventErr != nil {
+			return nil, eventErr
+		}
 		return result, nil
 	}
 
@@ -245,7 +247,9 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 		result.Status = aipReplication.Status
 		return result, nil
 	}
-	a.UpdateAIPStatus(ctx, aip.ID, AIPStatusReplicationInProgress)
+	if err := a.UpdateAIPStatus(ctx, aip.ID, AIPStatusReplicationInProgress); err != nil {
+		return nil, err
+	}
 
 	// TODO(daniel): Mark AIP Replication as In Progress.
 	//		Add attempt ++1
@@ -267,7 +271,9 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 		}
 		e.AddDetail(string(output))
 		result.Details = append(result.Details, string(output))
-		EndEventErr(ctx, a, e, aip, err.Error())
+		if eventErr := EndEventErr(ctx, a, e, aip, err.Error()); eventErr != nil {
+			return nil, errors.Join(err, eventErr)
+		}
 		return nil, err
 	} else {
 		e.AddDetail(string(output))
@@ -282,14 +288,18 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 				if err := a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusFinished); err != nil {
 					return nil, err
 				}
-				EndEventNoChange(ctx, a, e, aip)
+				if err := EndEventNoChange(ctx, a, e, aip); err != nil {
+					return nil, err
+				}
 			} else if strings.Contains(sentence, "New replicas created for 0 of 1 AIPs in location.") {
 				// TODO(daniel): Mark AIP Replication as Stalled/Unknown.
 				if err := a.updateReplicateAIPStatus(ctx, aipReplication, AIPReplicationStatusUnknown); err != nil {
 					return nil, err
 				}
 				e.AddDetail("Not replicated")
-				EndEventErr(ctx, a, e, aip, sentence)
+				if eventErr := EndEventErr(ctx, a, e, aip, sentence); eventErr != nil {
+					return nil, eventErr
+				}
 				return nil, err
 			} else if strings.Contains(sentence, "CommandError: No AIPs to replicate in location") {
 				// NOTE: In this case AIP has been deleted.
@@ -297,8 +307,12 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 					return nil, err
 				}
 				e.AddDetail("Not replicated")
-				EndEventErr(ctx, a, e, aip, sentence)
-				EndEvent(ctx, AIPStatusDeleted, a, e, aip)
+				if eventErr := EndEventErr(ctx, a, e, aip, sentence); eventErr != nil {
+					return nil, eventErr
+				}
+				if eventErr := EndEvent(ctx, AIPStatusDeleted, a, e, aip); eventErr != nil {
+					return nil, eventErr
+				}
 			}
 		} else {
 			// TODO(daniel): Mark AIP Replication as Stalled/Unknown.
@@ -306,7 +320,9 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 				return nil, err
 			}
 			logger.Info("Replication command returned", "output", string(output))
-			EndEventErr(ctx, a, e, aip, "Could not determine result of Replication")
+			if eventErr := EndEventErr(ctx, a, e, aip, "Could not determine result of Replication"); eventErr != nil {
+				return nil, eventErr
+			}
 			return nil, errors.New("could not determine result of replication")
 		}
 	}
@@ -372,7 +388,9 @@ func (a *App) CheckReplicationStatus(ctx context.Context, params CheckReplicatio
 		}
 	}
 	if len(aip.R.AipReplications) == finishedCount {
-		a.UpdateAIPStatus(ctx, aip.ID, AIPStatusReplicated)
+		if err := a.UpdateAIPStatus(ctx, aip.ID, AIPStatusReplicated); err != nil {
+			return err
+		}
 		return nil
 	}
 	return errors.New("cannot determine final status of replication")

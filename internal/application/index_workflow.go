@@ -90,6 +90,8 @@ func (a *App) Index(ctx context.Context, params IndexWorkflowParams) (*IndexActi
 	)
 
 	// TODO(daniel): Finish implementation
-	EndEvent(ctx, AIPStatusIndexed, a, e, aip)
+	if err := EndEvent(ctx, AIPStatusIndexed, a, e, aip); err != nil {
+		return nil, err
+	}
 	return result, nil
 }

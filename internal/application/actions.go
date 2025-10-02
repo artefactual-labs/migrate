@@ -41,8 +41,12 @@ func find(ctx context.Context, logger *slog.Logger, a *App, storageClient *stora
 		ssPackage, err := storageClient.Packages.GetByID(ctx, aip.UUID)
 		if err != nil {
 			if errors.Is(err, storage_service.ErrNotFound) {
-				EndEventErr(ctx, a, e, aip, "AIP not found in Storage Service")
-				a.UpdateAIPStatus(ctx, aip.ID, AIPStatusNotFound)
+				if eventErr := EndEventErr(ctx, a, e, aip, "AIP not found in Storage Service"); eventErr != nil {
+					return eventErr
+				}
+				if err := a.UpdateAIPStatus(ctx, aip.ID, AIPStatusNotFound); err != nil {
+					return err
+				}
 				continue
 			}
 			return err
@@ -56,22 +60,22 @@ func find(ctx context.Context, logger *slog.Logger, a *App, storageClient *stora
 			sizeVal = omitnull.From(int64(ssPackage.Size))
 		}
 
+		found := true
+		status := AIPStatusFound
 		if ssPackage.Status == "Deleted" {
-			a.UpdateAIP(ctx, aip.ID,
-				&models.AipSetter{
-					Found: omit.From(false),
-					Size:  sizeVal,
-				},
-			)
-			EndEvent(ctx, AIPStatusDeleted, a, e, aip)
-		} else {
-			a.UpdateAIP(ctx, aip.ID,
-				&models.AipSetter{
-					Found: omit.From(true),
-					Size:  sizeVal,
-				},
-			)
-			EndEvent(ctx, AIPStatusFound, a, e, aip)
+			found = false
+			status = AIPStatusDeleted
+		}
+		if err := a.UpdateAIP(ctx, aip.ID,
+			&models.AipSetter{
+				Found: omit.From(found),
+				Size:  sizeVal,
+			},
+		); err != nil {
+			return err
+		}
+		if err := EndEvent(ctx, status, a, e, aip); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -94,7 +98,9 @@ func move(ctx context.Context, logger *slog.Logger, a *App, storageClient *stora
 		}
 		if strings.Contains(ssPackage.CurrentLocation, a.Config.MoveLocationUUID) && ssPackage.Status == "UPLOADED" {
 			e.AddDetail("AIP already in the desired location")
-			EndEvent(ctx, AIPStatusMoved, a, e, aip)
+			if err := EndEvent(ctx, AIPStatusMoved, a, e, aip); err != nil {
+				return err
+			}
 			continue
 		}
 
@@ -103,7 +109,9 @@ func move(ctx context.Context, logger *slog.Logger, a *App, storageClient *stora
 		} else {
 			err = storageClient.Packages.Move(ctx, aip.UUID, a.Config.MoveLocationUUID)
 			if err != nil {
-				EndEventErr(ctx, a, e, aip, "MOVE operation failed: "+err.Error())
+				if eventErr := EndEventErr(ctx, a, e, aip, "MOVE operation failed: "+err.Error()); eventErr != nil {
+					return eventErr
+				}
 				continue
 			}
 		}
@@ -116,22 +124,32 @@ func move(ctx context.Context, logger *slog.Logger, a *App, storageClient *stora
 		for moving {
 			ssPackage, err = storageClient.Packages.GetByID(ctx, aip.UUID)
 			if err != nil {
-				EndEventErr(ctx, a, e, aip, err.Error())
+				if eventErr := EndEventErr(ctx, a, e, aip, err.Error()); eventErr != nil {
+					return eventErr
+				}
 				return err
 			}
 			if ssPackage.Status == "MOVING" {
-				a.UpdateAIPStatus(ctx, aip.ID, AIPStatusMoving)
+				if err := a.UpdateAIPStatus(ctx, aip.ID, AIPStatusMoving); err != nil {
+					return err
+				}
 			} else if ssPackage.Status == "UPLOADED" && strings.Contains(ssPackage.CurrentLocation, a.Config.LocationUUID) {
-				a.UpdateAIP(ctx, aip.ID, &models.AipSetter{
+				if err := a.UpdateAIP(ctx, aip.ID, &models.AipSetter{
 					CurrentLocation: omitnull.From(ssPackage.CurrentLocation),
-				})
-				EndEvent(ctx, AIPStatusMoved, a, e, aip)
+				}); err != nil {
+					return err
+				}
+				if err := EndEvent(ctx, AIPStatusMoved, a, e, aip); err != nil {
+					return err
+				}
 				b.Reset()
 				moving = false
 				continue
 			} else {
 				err := errors.New("Unexpected AIP Status: " + ssPackage.Status)
-				EndEventErr(ctx, a, e, aip, err.Error())
+				if eventErr := EndEventErr(ctx, a, e, aip, err.Error()); eventErr != nil {
+					return eventErr
+				}
 				return err
 			}
 			timeBackOff := b.NextBackOff()

@@ -20,7 +20,9 @@ func (a *App) MoveA(ctx context.Context, params MoveActivityParams) (*MoveActivi
 	if err != nil {
 		return nil, err
 	}
-	a.reloadAIP(ctx, aip)
+	if err := aip.Reload(ctx, a.DB); err != nil {
+		return nil, err
+	}
 	result := &MoveActivityResult{
 		Status: aip.Status,
 	}
