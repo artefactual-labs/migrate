@@ -17,9 +17,12 @@ type API struct {
 	Location *LocationService
 }
 
-func NewAPI(url, username, apiKey string) *API {
+func NewAPI(c *http.Client, url, username, apiKey string) *API {
+	if c == nil {
+		c = http.DefaultClient
+	}
 	client := &Client{
-		Client:   http.DefaultClient,
+		Client:   c,
 		baseURL:  "http://" + url,
 		userName: username,
 		apiKey:   apiKey,

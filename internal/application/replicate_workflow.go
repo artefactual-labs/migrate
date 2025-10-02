@@ -64,7 +64,7 @@ func (w *ReplicateWorkflow) Run(ctx workflow.Context, params ReplicateWorkflowPa
 		return result, nil
 	}
 
-	err = workflow.ExecuteActivity(ctx, CheckSSConnectionA, w.App.Config).Get(ctx, nil)
+	err = workflow.ExecuteActivity(ctx, CheckStorageServiceConnectionActivityName, w.App.Config).Get(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -178,8 +178,7 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 	}
 
 	e := StartEvent(ActionReplicate)
-	ssAPI := storage_service.NewAPI(a.Config.SSURL, a.Config.SSUserName, a.Config.SSAPIKey)
-	ssPackage, err := ssAPI.Packages.GetByID(ctx, aip.UUID)
+	ssPackage, err := a.StorageClient.Packages.GetByID(ctx, aip.UUID)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +324,7 @@ func (a *App) FindA(ctx context.Context, params FindParams) (*FindResult, error)
 		result.Size = FormatByteSize(aip.Size.GetOrZero())
 		return result, nil
 	}
-	err = find(ctx, a, aip)
+	err = find(ctx, a, a.StorageClient, aip)
 	if err != nil {
 		return nil, err
 	}
@@ -367,10 +366,19 @@ func (a *App) CheckReplicationStatus(ctx context.Context, params CheckReplicatio
 	return errors.New("cannot determine final status of replication")
 }
 
-func CheckSSConnectionA(ctx context.Context, config Config) error {
-	ssAPI := storage_service.NewAPI(config.SSURL, config.SSUserName, config.SSAPIKey)
+const CheckStorageServiceConnectionActivityName = "check-storage-service-connection"
+
+type CheckStorageServiceConnectionActivity struct {
+	StorageClient *storage_service.API
+}
+
+func NewCheckStorageServiceConnectionActivity(storageClient *storage_service.API) *CheckStorageServiceConnectionActivity {
+	return &CheckStorageServiceConnectionActivity{StorageClient: storageClient}
+}
+
+func (a *CheckStorageServiceConnectionActivity) Execute(ctx context.Context, config Config) error {
 	for _, l := range config.ReplicationLocations {
-		loc, err := ssAPI.Location.Get(ctx, l.UUID)
+		loc, err := a.StorageClient.Location.Get(ctx, l.UUID)
 		if err != nil {
 			return fmt.Errorf("error connecting with the SS: %w", err)
 		}

@@ -34,12 +34,11 @@ var (
 
 // find checks if the AIPs exist in the Storage Service and updates their status
 // accordingly.
-func find(ctx context.Context, a *App, aips ...*models.Aip) error {
-	ssAPI := storage_service.NewAPI(a.Config.SSURL, a.Config.SSUserName, a.Config.SSAPIKey)
+func find(ctx context.Context, a *App, storageClient *storage_service.API, aips ...*models.Aip) error {
 	slog.Info(fmt.Sprintf("Finding %d AIPS", len(aips)))
 	for _, aip := range aips {
 		e := StartEvent(ActionFind)
-		ssPackage, err := ssAPI.Packages.GetByID(ctx, aip.UUID)
+		ssPackage, err := storageClient.Packages.GetByID(ctx, aip.UUID)
 		if err != nil {
 			if errors.Is(err, storage_service.ErrNotFound) {
 				EndEventErr(ctx, a, e, aip, "AIP not found in Storage Service")
@@ -80,8 +79,7 @@ func find(ctx context.Context, a *App, aips ...*models.Aip) error {
 
 // move moves the AIPs to the desired location and updates their status
 // accordingly.
-func move(ctx context.Context, a *App, aips ...*models.Aip) error {
-	ssAPI := storage_service.NewAPI(a.Config.SSURL, a.Config.SSUserName, a.Config.SSAPIKey)
+func move(ctx context.Context, a *App, storageClient *storage_service.API, aips ...*models.Aip) error {
 	for _, aip := range aips {
 		e := StartEvent(ActionMove)
 		e.AddDetail(fmt.Sprintf("Moving: %s", aip.UUID))
@@ -90,7 +88,7 @@ func move(ctx context.Context, a *App, aips ...*models.Aip) error {
 			continue
 		}
 
-		ssPackage, err := ssAPI.Packages.GetByID(ctx, aip.UUID)
+		ssPackage, err := storageClient.Packages.GetByID(ctx, aip.UUID)
 		if err != nil {
 			continue
 		}
@@ -103,7 +101,7 @@ func move(ctx context.Context, a *App, aips ...*models.Aip) error {
 		if aip.Status == string(AIPStatusMoving) {
 			slog.Info("AIP last know Status: moving")
 		} else {
-			err = ssAPI.Packages.Move(ctx, aip.UUID, a.Config.MoveLocationUUID)
+			err = storageClient.Packages.Move(ctx, aip.UUID, a.Config.MoveLocationUUID)
 			if err != nil {
 				EndEventErr(ctx, a, e, aip, "MOVE operation failed: "+err.Error())
 				continue
@@ -116,7 +114,7 @@ func move(ctx context.Context, a *App, aips ...*models.Aip) error {
 			backoff.WithMaxInterval(2*time.Minute),
 		)
 		for moving {
-			ssPackage, err = ssAPI.Packages.GetByID(ctx, aip.UUID)
+			ssPackage, err = storageClient.Packages.GetByID(ctx, aip.UUID)
 			if err != nil {
 				EndEventErr(ctx, a, e, aip, err.Error())
 				return err

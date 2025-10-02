@@ -49,7 +49,7 @@ func (w *MoveWorkflow) Run(ctx workflow.Context, params MoveWorkflowParams) (*Mo
 		return result, nil
 	}
 
-	err = workflow.ExecuteActivity(ctx, CheckSSConnectionA, w.App.Config).Get(ctx, nil)
+	err = workflow.ExecuteActivity(ctx, CheckStorageServiceConnectionActivityName, w.App.Config).Get(ctx, nil)
 	if err != nil {
 		return nil, err
 	}

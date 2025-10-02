@@ -23,6 +23,9 @@ type App struct {
 	DB     bob.DB
 	Config Config
 	Tc     client.Client
+
+	// A client to interact with the Storage Service API.
+	StorageClient *storage_service.API
 }
 
 type AIPStatus string
@@ -288,16 +291,6 @@ func formatBool(b bool) string {
 		return "Done"
 	}
 	return "Not Done"
-}
-
-func CheckSSConnection(ctx context.Context, a *App) error {
-	ssAPI := storage_service.NewAPI(a.Config.SSURL, a.Config.SSUserName, a.Config.SSAPIKey)
-	location, err := ssAPI.Location.Get(ctx, a.Config.LocationUUID)
-	if err != nil {
-		return fmt.Errorf("error connecting with the SS: %w", err)
-	}
-	slog.Info("Location for migration", "Description", location.Description, "Path", location.Path)
-	return nil
 }
 
 func FormatByteSize(b int64) string {

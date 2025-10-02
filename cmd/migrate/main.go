@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/stephenafamo/bob"
@@ -23,6 +24,7 @@ import (
 
 	"github.com/artefactual-labs/migrate/internal/application"
 	"github.com/artefactual-labs/migrate/internal/database/migrations"
+	"github.com/artefactual-labs/migrate/internal/storage_service"
 )
 
 func main() {
@@ -45,12 +47,13 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 	logger := slog.New(slog.NewTextHandler(stderr, loggerOpts))
 	slog.SetDefault(logger) // TODO: avoid global state.
 
+	app := &application.App{}
+
 	db, err := initDatabase(ctx, "migrate.db")
 	if err != nil {
 		return err
 	}
 
-	app := &application.App{}
 	app.DB = db
 
 	if cfgFile, err := os.ReadFile("config.json"); err != nil {
@@ -58,6 +61,8 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 	} else if err := json.Unmarshal(cfgFile, &app.Config); err != nil {
 		return fmt.Errorf("unmarshal config.json: %v", err)
 	}
+
+	app.StorageClient = storage_service.NewAPI(http.DefaultClient, app.Config.SSURL, app.Config.SSUserName, app.Config.SSAPIKey)
 
 	// Connect with Temporal Server.
 	// TODO(daniel): make all these options configurable.
@@ -261,7 +266,10 @@ func registerWorker(app *application.App) worker.Worker {
 			Name: application.MoveWorkflowName,
 		})
 
-	w.RegisterActivity(application.CheckSSConnectionA)
+	w.RegisterActivityWithOptions(
+		application.NewCheckStorageServiceConnectionActivity(app.StorageClient).Execute,
+		activity.RegisterOptions{Name: application.CheckStorageServiceConnectionActivityName},
+	)
 	w.RegisterActivityWithOptions(app.InitAIPInDatabase, activity.RegisterOptions{Name: application.InitAIPInDatabaseName})
 	w.RegisterActivityWithOptions(app.ReplicateA, activity.RegisterOptions{Name: application.ReplicateAName})
 	w.RegisterActivityWithOptions(app.FindA, activity.RegisterOptions{Name: application.FindAName})
