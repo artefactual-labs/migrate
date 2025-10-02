@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -17,13 +18,19 @@ type API struct {
 	Location *LocationService
 }
 
-func NewAPI(c *http.Client, url, username, apiKey string) *API {
+func NewAPI(c *http.Client, baseURL, username, apiKey string) *API {
 	if c == nil {
 		c = http.DefaultClient
 	}
+
+	// Add default scheme if missing.
+	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+		baseURL = "http://" + baseURL
+	}
+
 	client := &Client{
 		Client:   c,
-		baseURL:  "http://" + url,
+		baseURL:  baseURL,
 		userName: username,
 		apiKey:   apiKey,
 	}
