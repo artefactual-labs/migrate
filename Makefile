@@ -39,8 +39,17 @@ help:
 
 lint: # @HELP Lint the project Go files with golangci-lint (linters + formatters).
 lint: LINT_FLAGS ?= --fix=1
-lint: tool-golangci-lint
+lint: tool-golangci-lint lint-deadcode
 	golangci-lint run $(LINT_FLAGS)
+
+lint-deadcode: # @HELP Find unreachable functions.
+lint-deadcode: tool-deadcode
+	@output=$$({ deadcode -test ./... || true; }); \
+	if [[ -n "$$output" ]]; then \
+	  echo "Unreachable code found:"; \
+	  echo "$$output"; \
+	  exit 1; \
+	fi
 
 tool-%:
 	@go tool bine get $* 1> /dev/null

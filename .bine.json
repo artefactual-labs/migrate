@@ -11,6 +11,11 @@
       "name": "bobgen-sqlite",
       "go_package": "github.com/stephenafamo/bob/gen/bobgen-sqlite",
       "version": "0.41.1"
+    },
+    {
+      "name": "deadcode",
+      "go_package": "golang.org/x/tools/cmd/deadcode",
+      "version": "0.37.0"
     }
   ]
 }
