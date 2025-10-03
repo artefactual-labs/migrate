@@ -68,11 +68,11 @@ const (
 )
 
 func (a *App) Export(ctx context.Context) error {
-	err := os.RemoveAll("report.csv")
+	err := os.RemoveAll("move-report.csv")
 	if err != nil {
 		return err
 	}
-	file, err := os.Create("report.csv")
+	file, err := os.Create("move-report.csv")
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (a *App) Export(ctx context.Context) error {
 			return err
 		}
 	}
-	a.logger.Info("Success!")
+	a.logger.Info("Move export generated", "path", "move-report.csv")
 	return nil
 }
 
@@ -216,23 +216,9 @@ func (a *App) ExportReplication(ctx context.Context) error {
 	return nil
 }
 
-func (a *App) GetAIPs(ctx context.Context) (models.AipSlice, error) {
-	return models.Aips.Query().All(ctx, a.DB)
-}
-
 func (a *App) GetAIPByID(ctx context.Context, uuid string) (*models.Aip, error) {
 	q := models.Aips.Query(models.SelectWhere.Aips.UUID.EQ(uuid))
 	return q.One(ctx, a.DB)
-}
-
-func (a *App) GetAIPsByStatus(ctx context.Context, ss ...AIPStatus) (models.AipSlice, error) {
-	q := models.Aips.Query()
-	var args []string
-	for _, s := range ss {
-		args = append(args, string(s))
-	}
-	q.Apply(models.SelectWhere.Aips.Status.In(args...))
-	return q.All(ctx, a.DB)
 }
 
 func (a *App) UpdateAIP(ctx context.Context, id int64, setter *models.AipSetter) error {

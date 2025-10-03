@@ -41,25 +41,3 @@ func (s *PackageService) Move(ctx context.Context, packageID, locationID string)
 	p.Set("location_uuid", locationID)
 	return s.client.Call(ctx, http.MethodPost, path, p.Encode(), nil)
 }
-
-type FixityResponse struct {
-	Success   bool           `json:"success"`
-	Message   string         `json:"message"`
-	Timestamp string         `json:"timestamp"`
-	Failures  FixityFailures `json:"failures"`
-}
-
-type FixityFailures struct {
-	Files struct {
-		Missing   []string `json:"missing"`
-		Changed   []string `json:"changed"`
-		Untracked []string `json:"untracked"`
-	}
-}
-
-func (s *PackageService) CheckFixity(ctx context.Context, id string) (*FixityResponse, error) {
-	res := &FixityResponse{}
-	path := fmt.Sprintf("/api/v2/file/%s/check_fixity/", id)
-	err := s.client.Call(ctx, http.MethodGet, path, nil, &res)
-	return res, err
-}

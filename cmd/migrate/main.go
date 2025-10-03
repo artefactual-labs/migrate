@@ -11,9 +11,11 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/stephenafamo/bob"
 	"go.temporal.io/api/enums/v1"
+	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/client"
@@ -64,23 +66,27 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 	// TODO(daniel): make all these options configurable.
 	// TODO: push namespace registration to deployment.
 	const temporalNamespace = "move"
-	var temporalClient client.Client
-	if tc, err := client.Dial(client.Options{
+	temporalClient, err := client.Dial(client.Options{
 		Namespace: temporalNamespace,
 		Logger:    logger,
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("dial temporal: %v", err)
-	} else if nsc, err := client.NewNamespaceClient(client.Options{Namespace: temporalNamespace}); err != nil {
+	}
+
+	nsClient, err := client.NewNamespaceClient(client.Options{Namespace: temporalNamespace})
+	if err != nil {
 		return fmt.Errorf("new namespace client: %v", err)
-	} else if err := nsc.Register(ctx, &workflowservice.RegisterNamespaceRequest{
+	} else if err := nsClient.Register(ctx, &workflowservice.RegisterNamespaceRequest{
 		Namespace: temporalNamespace,
 		WorkflowExecutionRetentionPeriod: &durationpb.Duration{
 			Seconds: 31_536_000, /* 365 days. */
 		},
 	}); err != nil {
-		return fmt.Errorf("register namespace: %v", err)
-	} else {
-		temporalClient = tc
+		var namespaceAlreadyExists *serviceerror.NamespaceAlreadyExists
+		if !errors.As(err, &namespaceAlreadyExists) {
+			return fmt.Errorf("register namespace: %v", err)
+		}
 	}
 
 	app := application.New(logger, db, config, temporalClient, storageClient)
@@ -104,10 +110,10 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 		return fmt.Errorf("validate UUIDs: %v", err)
 	}
 
-	if len(args) <= 1 {
+	if len(args) == 0 {
 		return errors.New("missing command")
 	}
-	command := args[1]
+	command := args[0]
 
 	switch command {
 	case "worker":
@@ -190,11 +196,24 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 			}
 			logger.Info("workflow", "ID", we.GetID())
 		}
-	case "index":
 	case "export":
-		err = app.ExportReplication(ctx)
-		if err != nil {
-			return fmt.Errorf("export replication: %v", err)
+		if len(args) < 2 {
+			return errors.New("missing export type (move|replicate)")
+		}
+		exportType := strings.ToLower(args[1])
+		switch exportType {
+		case "move":
+			err = app.Export(ctx)
+			if err != nil {
+				return fmt.Errorf("export move report: %v", err)
+			}
+		case "replicate":
+			err = app.ExportReplication(ctx)
+			if err != nil {
+				return fmt.Errorf("export replication report: %v", err)
+			}
+		default:
+			return fmt.Errorf("unsupported export type: %s", exportType)
 		}
 	case "load-input":
 		for _, id := range UUIDs {

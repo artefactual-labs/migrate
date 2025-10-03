@@ -12,7 +12,6 @@ type Config struct {
 	SSContainerName      string      `json:"ss_container_name"`
 	ReplicationLocations []Location  `json:"replication_locations"`
 	Environment          Environment `json:"environment"`
-	Dashboard            Dashboard   `json:"dashboard"`
 }
 
 type Location struct {
@@ -34,16 +33,4 @@ type Environment struct {
 	TimeZone             string `json:"time_zone"`
 	SsGunicornWorkers    string `json:"ss_gunicorn_workers"`
 	RequestsCaBundle     string `json:"requests_ca_bundle"`
-}
-
-type Dashboard struct {
-	ManagePath           string `json:"manage_path"`
-	PythonPath           string `json:"python_path"`
-	Lang                 string `json:"lang"`
-	DjangoSettingsModule string `json:"django_settings_module"`
-	DjangoAllowedHosts   string `json:"django_allowed_hosts"`
-	DjangoSecretKey      string `json:"django_secret_key"`
-	GunicornBind         string `json:"gunicorn_bind"`
-	ElasticSearchServer  string `json:"elastic_search_url"`
-	SSClientQuickTimeout string `json:"ss_client_quick_timeout"`
 }

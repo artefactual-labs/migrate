@@ -19,6 +19,15 @@ export PATH := $(shell go tool bine path):$(PATH)
 build: # @HELP Build migrate.
 	env CGO_ENABLED=0 go build -trimpath -o $(CURDIR)/migrate ./cmd/migrate
 
+deadcode: # @HELP Find unreachable functions.
+deadcode: tool-deadcode
+	@output=$$({ deadcode -test ./... || true; }); \
+	if [[ -n "$$output" ]]; then \
+	  echo "Unreachable code found:"; \
+	  echo "$$output"; \
+	  exit 1; \
+	fi
+
 fmt: # @HELP Format the project Go files with golangci-lint.
 fmt: FMT_FLAGS ?=
 fmt: tool-golangci-lint
@@ -39,17 +48,8 @@ help:
 
 lint: # @HELP Lint the project Go files with golangci-lint (linters + formatters).
 lint: LINT_FLAGS ?= --fix=1
-lint: tool-golangci-lint lint-deadcode
+lint: tool-golangci-lint
 	golangci-lint run $(LINT_FLAGS)
-
-lint-deadcode: # @HELP Find unreachable functions.
-lint-deadcode: tool-deadcode
-	@output=$$({ deadcode -test ./... || true; }); \
-	if [[ -n "$$output" ]]; then \
-	  echo "Unreachable code found:"; \
-	  echo "$$output"; \
-	  exit 1; \
-	fi
 
 tool-%:
 	@go tool bine get $* 1> /dev/null

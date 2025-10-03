@@ -22,7 +22,8 @@ but running those operations at **scale** (tens of thousands of AIPs) is:
   restarts
 - **State tracking** in a local SQLite database (`migrate.db`)
 - **Parallel execution** across multiple workers
-- **CSV reports** (`replication-report.csv`) for QA, auditing, and compliance
+- **CSV reports** (`move-report.csv`, `replication-report.csv`) for QA,
+  auditing, and compliance
 
 In short: give it a list of AIPs, and Migrate will orchestrate every move and
 replication reliably until the job is done.
@@ -190,12 +191,13 @@ On the other hand, to move AIPs from source to destination, run:
 
 ### 6. Export results
 
-The following command generates a CSV report of all processed AIPs:
+Generate CSV reports for move or replication workflows:
 
-    migrate export
+    migrate export move
+    migrate export replicate
 
-This creates a `replication-report.csv` file with details of each AIP's
-operations, including success or failure status.
+Each command writes the corresponding report (`move-report.csv` or
+`replication-report.csv`) with the latest status for every AIP.
 
 [Temporal]: https://temporal.io
 [Temporal CLI]: https://docs.temporal.io/cli/setup-cli

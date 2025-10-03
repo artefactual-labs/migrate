@@ -74,16 +74,6 @@ func EndEventErr(ctx context.Context, a *App, e Event, aip *models.Aip, eventErr
 	return aip.InsertEvents(ctx, a.DB, setter)
 }
 
-func EndEventErrNoFailure(ctx context.Context, a *App, e Event, aip *models.Aip, eventErr string) error {
-	e.End = time.Now()
-	a.AddAIPError(ctx, aip, eventErr)
-	setter, err := EventToSetter(e)
-	if err != nil {
-		return err
-	}
-	return aip.InsertEvents(ctx, a.DB, setter)
-}
-
 func EventToSetter(e Event) (*models.EventSetter, error) {
 	formatDetails, err := e.FormatDetails()
 	if err != nil {
