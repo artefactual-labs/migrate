@@ -1,67 +1,96 @@
-# Archivematica AIP Migration Tool
+# Migrate
 
-A Go-based tool for migrating, replicating, and moving Archivematica AIPs
-(Archival Information Packages) between storage locations using Temporal
-workflows.
+**Migrate** is a command-line tool for orchestrating large-scale **Archivematica
+AIP migrations**. It automates the process of **moving and replicating AIPs**
+between Archivematica Storage Service locations, e.g. migrating AIPs from
+on-premises storage into DuraCloud while keeping a local replica set.
 
-## What This Tool Does
+## Why use this tool?
 
-This tool helps you:
+Archivematica’s Storage Service already supports moving and replicating AIPs,
+but running those operations at **scale** (tens of thousands of AIPs) is:
 
-- **Migrate AIPs** between different storage locations in Archivematica
-- **Replicate AIPs** to create copies in multiple locations for redundancy
-- **Move AIPs** from one location to another
-- **Track migration progress** using a SQLite database
-- **Process AIPs in batch** using UUID lists
-- **Generate reports** on migration status
+- **Slow and error-prone** if done manually
+- **Hard to resume** if interrupted
+- **Lacking visibility** into what has succeeded or failed
+
+**Migrate** solves these problems by adding a durable orchestration layer:
+
+- **Move and replicate AIPs** between Storage Service locations
+- **Batch processing** from a simple UUID list (`input.txt`)
+- **Reliable orchestration** with [Temporal] so workflows survive crashes and
+  restarts
+- **State tracking** in a local SQLite database (`migrate.db`)
+- **Parallel execution** across multiple workers
+- **CSV reports** (`replication-report.csv`) for QA, auditing, and compliance
+
+In short: give it a list of AIPs, and Migrate will orchestrate every move and
+replication reliably until the job is done.
+
+## Why is this not part of Storage Service?
+
+Because Storage Service was never designed to be a workflow engine. It can move
+and replicate AIPs, but it has no durable queue, no orchestration layer, and no
+good way to resume or audit thousands of operations. It works for one-off jobs,
+but at scale it becomes brittle.
+
+Migrate fills that gap: it wraps Storage Service operations in durable Temporal
+workflows, adding the missing layer of **scale, reliability, and reporting**
+that Storage Service can't provide on its own. Over time, we expect new
+approaches to emerge for large-scale digital preservation workflows, but today
+Migrate is the practical tool to get the job done.
+
+## How it works
+
+Migrate separates **command submission** from **execution**:
+
+- The **client** (`migrate replicate` / `migrate move`) submits workflows to
+  Temporal.
+- The **worker** (`migrate worker`) picks up tasks and executes them: talks to
+  the Storage Service API, requests move or replication operations, checks
+  fixity, and updates the database.
+- The **SQLite DB** (`migrate.db`) keeps track of every AIP's state.
+- You can generate **reports** (`migrate export`) at any time.
+
+The following diagram illustrates the basic architecture:
+
+```mermaid
+flowchart TD
+    A[Client: migrate CLI] -->|Submit workflows| B[Temporal Server]
+    B --> C[Worker: migrate worker]
+    C --> D[Archivematica Storage Service]
+    D -->|Move/Replicate| E1[Storage Location A]
+    D -->|Move/Replicate| E2[Storage Location B]
+    D -->|Move/Replicate| E3[Storage Location C]
+    C --> F[(SQLite DB: migrate.db)]
+    F --> G[CSV Reports]
+```
 
 ## Prerequisites
 
-Before you can use this tool, you need:
+- Access to an **Archivematica Storage Service** instance with valid API
+  credentials.
 
-1. **Go 1.23 or later** installed on your system
-   - Download from: <https://golang.org/dl/>
-   - Verify installation: `go version`
+- A running **Temporal Server**:
 
-2. **musl-gcc** (for static linking with SQLite)
-   - Ubuntu/Debian: `sudo apt-get install musl-tools musl-dev`
-   - CentOS/RHEL: `sudo yum install musl-gcc`
-   - macOS: `brew install musl-cross`
+  1. **Production-ready deployment (recommended):**
 
-3. **Temporal Server** (workflow orchestration)
-   - Follow installation guide: <https://docs.temporal.io/cli/setup-cli>
-   - Or run with Docker: `temporal server start-dev`
+     Connect to a server already maintained by your organization, use [Temporal
+     Cloud], or deploy your own cluster by following the [production deployment
+     guide]. Be aware that operating and maintaining your own cluster adds
+     substantial complexity to your setup.
 
-4. **Access to Archivematica Storage Service**
-   - Storage Service API credentials
-   - Network access to your Archivematica instances
+  2. **Local development (quick start):**
 
-## Installation
+     Start a lightweight development server with the [Temporal CLI]:
 
-### 1. Clone the Repository
+         temporal server start-dev --db-filename ./temporal.db
 
-```bash
-git clone https://github.com/artefactual-labs/migrate.git
-cd migrate
-```
-
-### 2. Install Go Dependencies
-
-```bash
-go mod download
-```
-
-### 3. Build the Tool
-
-```bash
-./scripts/build.sh
-```
-
-This creates a statically-linked binary called `migrate` in the current directory.
+- Install Migrate: prebuilt packages are available from the [releases page].
 
 ## Configuration
 
-### 1. Create Configuration File
+### 1. Create configuration file
 
 Create a `config.json` file in the project root with the **actively used settings**:
 
@@ -115,12 +144,7 @@ Create a `config.json` file in the project root with the **actively used setting
 }
 ```
 
-**Note:** This shows only the settings that are actively used by the current
-implementation. For a complete list of possible settings (including many that
-have no effect), see the [Additional Configuration Options](#additional-configuration-options)
-section below.
-
-### 2. Create Input File
+### 2. Create input file
 
 Create an `input.txt` file containing the UUIDs of AIPs you want to process
 (one UUID per line):
@@ -134,24 +158,7 @@ abcdef01-2345-6789-abcd-ef0123456789
 If you need to trim an existing UUID list before loading it, a small helper
 command lives in `cmd/list-filter`. See its README for usage details.
 
-## Usage
-
-### Start Temporal Server
-
-First, start your Temporal server:
-
-```bash
-temporal server start-dev --db-filename path/to/local-persistent-store
-```
-
-Always specify `--db-filename`, otherwise Temporal will use an in-memory
-database and all data will be lost when the process stops.
-
-### Running the Tool
-
-The tool supports several commands:
-
-#### 1. Load Input and Initialize Database
+### 3. Load input file
 
 ```bash
 ./migrate load-input
@@ -159,7 +166,7 @@ The tool supports several commands:
 
 This validates the UUIDs in `input.txt` and initializes them in the database.
 
-#### 2. Start Worker Process
+### 4. Start worker process
 
 ```bash
 ./migrate worker
@@ -168,122 +175,30 @@ This validates the UUIDs in `input.txt` and initializes them in the database.
 This starts a worker process that handles Temporal workflows. Keep this
 running in a separate terminal.
 
-#### 3. Replicate AIPs
+### 5. Move or replicate AIPs
 
-```bash
-./migrate replicate
-```
+At this point, you can either `replicate` or `move` AIPs.
 
-This replicates AIPs to the configured replication locations.
+The following command starts the replication process for AIPs to the configured
+replication locations:
 
-#### 4. Move AIPs
+    migrate replicate
 
-```bash
-./migrate move
-```
+On the other hand, to move AIPs from source to destination, run:
 
-This moves AIPs from source to destination location.
+    migrate move
 
-#### 5. Export Results
+### 6. Export results
 
-```bash
-./migrate export
-```
+The following command generates a CSV report of all processed AIPs:
 
-This generates a CSV report (`report.csv`) showing the status of all processed AIPs.
+    migrate export
 
-### Typical Workflow
+This creates a `replication-report.csv` file with details of each AIP's
+operations, including success or failure status.
 
-1. **Prepare your environment:**
-
-   ```bash
-   # Start Temporal server
-   temporal server start-dev
-   ```
-
-2. **Set up the tool:**
-
-   ```bash
-   # Create config.json with your settings
-   # Create input.txt with AIP UUIDs
-   ./migrate load-input
-   ```
-
-3. **Start the worker (in separate terminal):**
-
-   ```bash
-   ./migrate worker
-   ```
-
-4. **Run migration operations:**
-
-   ```bash
-   # For replication
-   ./migrate replicate
-
-   # Or for moving
-   ./migrate move
-   ```
-
-5. **Check results:**
-
-   ```bash
-   ./migrate export
-   # Check report.csv for results
-   ```
-
-## Troubleshooting
-
-### Common Issues
-
-**"missing command" error:**
-
-- Make sure you're providing a command: `./migrate replicate` (not just `./migrate`)
-
-**Database errors:**
-
-- The tool creates `migrate.db` automatically
-- Delete `migrate.db` to reset and start fresh
-
-**Configuration errors:**
-
-- Verify all UUIDs in `config.json` are valid
-- Check that URLs are reachable from your system
-- Ensure API credentials are correct
-
-### Getting Help
-
-- Check the logs for detailed error messages
-- Verify your Archivematica Storage Service is accessible
-- Ensure all file paths in the configuration exist
-- Make sure you have sufficient permissions for staging/local paths
-
-## File Structure
-
-- `config.json` - Configuration file (you create this)
-- `input.txt` - List of AIP UUIDs to process (you create this)
-- `migrate.db` - SQLite database (created automatically)
-- `report.csv` - Export results (created by export command)
-- `migrate` - The compiled binary (created by build script)
-
-## Notes
-
-- This tool uses Temporal workflows for reliability and observability
-- Progress is tracked in a local SQLite database
-- The tool validates UUIDs before processing
-- All file operations use staging areas to prevent data loss
-
-## Additional Configuration Options
-
-The configuration file supports many additional settings beyond those shown in
-the main example. While these settings are **structurally valid** and can be
-included in your configuration, **most have no effect** on the current
-implementation:
-
-### Additional Dashboard Settings
-
-The Temporal index workflow reads only the dashboard settings shown in the main
-example: manage path, Python path, locale, Django configuration, gunicorn bind
-address, Elasticsearch URL, and the storage-service client quick timeout. All
-other historical dashboard keys were removed with the legacy CLI code paths and
-are now ignored during unmarshalling.
+[Temporal]: https://temporal.io
+[Temporal CLI]: https://docs.temporal.io/cli/setup-cli
+[Temporal Cloud]: https://temporal.io/cloud
+[production deployment guide]: https://docs.temporal.io/production-deployment
+[releases page]: https://github.com/artefactual-labs/migrate/releases

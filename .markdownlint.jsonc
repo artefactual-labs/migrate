@@ -1,0 +1,6 @@
+{
+  "default": true,
+  
+  // Allow indented code blocks.
+  "MD046": false
+}
