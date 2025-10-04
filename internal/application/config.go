@@ -117,27 +117,10 @@ type Config struct {
 	SSContainerName string `json:"ss_container_name"`
 
 	// Environment variables for storage service commands.
-	Environment Environment `json:"environment"`
+	Environment map[string]string `json:"environment"`
 }
 
 type Location struct {
 	UUID string `json:"uuid"`
 	Name string `json:"name"`
-}
-
-// Environment configures storage service process environment variables.
-type Environment struct {
-	DjangoSettingsModule string `json:"django_settings_module"`
-	DjangoSecretKey      string `json:"django_secret_key"`
-	DjangoAllowedHosts   string `json:"django_allowed_hosts"`
-	SsGunicornBind       string `json:"ss_gunicorn_bind"`
-	EmailHost            string `json:"email_host"`
-	SsAuditLogMiddleware string `json:"ss_audit_log_middleware"`
-	SsDbUrl              string `json:"ss_db_url"`
-	EmailUseTls          string `json:"email_use_tls"`
-	SsPrometheusEnabled  string `json:"ss_prometheus_enabled"`
-	DefaultFromEmail     string `json:"default_from_email"`
-	TimeZone             string `json:"time_zone"`
-	SsGunicornWorkers    string `json:"ss_gunicorn_workers"`
-	RequestsCaBundle     string `json:"requests_ca_bundle"`
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"sort"
 	"strings"
 	"time"
 
@@ -218,21 +219,16 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 			"--replicator-location", params.ReplicaLocationUUID,
 		)
 		cmd.Env = cmd.Environ()
-		cmd.Env = append(cmd.Env,
-			"DJANGO_SETTINGS_MODULE="+a.Config.Environment.DjangoSettingsModule,
-			"DJANGO_SECRET_KEY="+a.Config.Environment.DjangoSecretKey,
-			"DJANGO_ALLOWED_HOSTS="+a.Config.Environment.DjangoAllowedHosts,
-			"SS_GUNICORN_BIND="+a.Config.Environment.SsGunicornBind,
-			"EMAIL_HOST="+a.Config.Environment.EmailHost,
-			"SS_AUDIT_LOG_MIDDLEWARE="+a.Config.Environment.SsAuditLogMiddleware,
-			"SS_DB_URL="+a.Config.Environment.SsDbUrl,
-			"EMAIL_USE_TLS="+a.Config.Environment.EmailUseTls,
-			"SS_PROMETHEUS_ENABLED="+a.Config.Environment.SsPrometheusEnabled,
-			"DEFAULT_FROM_EMAIL="+a.Config.Environment.DefaultFromEmail,
-			"TIME_ZONE="+a.Config.Environment.TimeZone,
-			"SS_GUNICORN_WORKERS="+a.Config.Environment.SsGunicornWorkers,
-			"REQUESTS_CA_BUNDLE="+a.Config.Environment.RequestsCaBundle,
-		)
+		if len(a.Config.Environment) > 0 {
+			keys := make([]string, 0, len(a.Config.Environment))
+			for key := range a.Config.Environment {
+				keys = append(keys, key)
+			}
+			sort.Strings(keys)
+			for _, key := range keys {
+				cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, a.Config.Environment[key]))
+			}
+		}
 	}
 
 	q := models.AipReplications.Query(

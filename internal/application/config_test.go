@@ -22,19 +22,19 @@ var configExample = []byte(`{
 	    {"uuid": "rep-1", "name": "Replica One"}
 	  ],
 	  "environment": {
-	    "django_settings_module": "settings",
-	    "django_secret_key": "secret",
-	    "django_allowed_hosts": "*",
-	    "ss_gunicorn_bind": "0.0.0.0:8000",
-	    "email_host": "localhost",
-	    "ss_audit_log_middleware": "false",
-	    "ss_db_url": "sqlite:///db",
-	    "email_use_tls": "false",
-	    "ss_prometheus_enabled": "false",
-	    "default_from_email": "noreply@example.com",
-	    "time_zone": "UTC",
-	    "ss_gunicorn_workers": "2",
-	    "requests_ca_bundle": ""
+	    "DJANGO_SETTINGS_MODULE": "settings",
+	    "DJANGO_SECRET_KEY": "secret",
+	    "DJANGO_ALLOWED_HOSTS": "*",
+	    "SS_GUNICORN_BIND": "0.0.0.0:8000",
+	    "EMAIL_HOST": "localhost",
+	    "SS_AUDIT_LOG_MIDDLEWARE": "false",
+	    "SS_DB_URL": "sqlite:///db",
+	    "EMAIL_USE_TLS": "false",
+	    "SS_PROMETHEUS_ENABLED": "false",
+	    "DEFAULT_FROM_EMAIL": "noreply@example.com",
+	    "TIME_ZONE": "UTC",
+	    "SS_GUNICORN_WORKERS": "2",
+	    "REQUESTS_CA_BUNDLE": ""
 	  }
 	}`)
 
@@ -55,4 +55,5 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, cfg.SSURL, "http://storage")
 	assert.Equal(t, cfg.SSUserName, "user")
 	assert.Equal(t, cfg.MoveLocationUUID, "move-uuid")
+	assert.Equal(t, cfg.Environment["DJANGO_SETTINGS_MODULE"], "settings")
 }
