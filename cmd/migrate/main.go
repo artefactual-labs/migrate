@@ -14,13 +14,10 @@ import (
 
 	"github.com/stephenafamo/bob"
 	"go.temporal.io/api/enums/v1"
-	"go.temporal.io/api/serviceerror"
-	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
-	"google.golang.org/protobuf/types/known/durationpb"
 	_ "modernc.org/sqlite"
 
 	"github.com/artefactual-labs/migrate/internal/application"
@@ -60,30 +57,13 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 	storageClient := storage_service.NewAPI(http.DefaultClient, cfg.SSURL, cfg.SSUserName, cfg.SSAPIKey)
 
 	// Connect with Temporal Server.
-	// TODO(daniel): make all these options configurable.
-	// TODO: push namespace registration to deployment.
-	const temporalNamespace = "move"
 	temporalClient, err := client.Dial(client.Options{
-		Namespace: temporalNamespace,
+		Namespace: cfg.Temporal.Namespace,
+		HostPort:  cfg.Temporal.Address,
 		Logger:    logger,
 	})
 	if err != nil {
 		return fmt.Errorf("dial temporal: %v", err)
-	}
-
-	nsClient, err := client.NewNamespaceClient(client.Options{Namespace: temporalNamespace})
-	if err != nil {
-		return fmt.Errorf("new namespace client: %v", err)
-	} else if err := nsClient.Register(ctx, &workflowservice.RegisterNamespaceRequest{
-		Namespace: temporalNamespace,
-		WorkflowExecutionRetentionPeriod: &durationpb.Duration{
-			Seconds: 31_536_000, /* 365 days. */
-		},
-	}); err != nil {
-		var namespaceAlreadyExists *serviceerror.NamespaceAlreadyExists
-		if !errors.As(err, &namespaceAlreadyExists) {
-			return fmt.Errorf("register namespace: %v", err)
-		}
 	}
 
 	app := application.New(logger, db, cfg, temporalClient, storageClient)
@@ -128,7 +108,7 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 			WorkflowID := fmt.Sprintf("AIP_Replicate_%s", id.String())
 			options := client.StartWorkflowOptions{
 				ID:                    WorkflowID,
-				TaskQueue:             application.DEFAULT_TASKT_QUEUE,
+				TaskQueue:             cfg.Temporal.TaskQueue,
 				WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_ALLOW_DUPLICATE,
 			}
 			params := application.ReplicateWorkflowParams{
@@ -163,7 +143,7 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 			WorkflowID := fmt.Sprintf("AIP_Move_%s", id.String())
 			options := client.StartWorkflowOptions{
 				ID:                    WorkflowID,
-				TaskQueue:             application.DEFAULT_TASKT_QUEUE,
+				TaskQueue:             cfg.Temporal.TaskQueue,
 				WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_ALLOW_DUPLICATE,
 			}
 			params := application.MoveWorkflowParams{
@@ -269,7 +249,7 @@ func StartWorker(app *application.App) error {
 }
 
 func registerWorker(app *application.App) worker.Worker {
-	w := worker.New(app.Tc, application.DEFAULT_TASKT_QUEUE, worker.Options{})
+	w := worker.New(app.Tc, app.Config.Temporal.TaskQueue, worker.Options{})
 	w.RegisterWorkflowWithOptions(
 		application.NewReplicateWorkflow(app).Run,
 		workflow.RegisterOptions{

@@ -12,6 +12,11 @@ var configExample = []byte(`{
 	  "ss_url": "http://storage",
 	  "ss_user_name": "user",
 	  "ss_api_key": "key",
+	  "temporal": {
+	    "namespace": "default",
+	    "address": "temporal:7233",
+	    "taskQueue": "queue"
+	  },
 	  "move_location_uuid": "move-uuid",
 	  "location_uuid": "loc-uuid",
 	  "ss_manage_path": "/manage",
@@ -56,4 +61,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, cfg.SSUserName, "user")
 	assert.Equal(t, cfg.MoveLocationUUID, "move-uuid")
 	assert.Equal(t, cfg.Environment["DJANGO_SETTINGS_MODULE"], "settings")
+	assert.Equal(t, cfg.Temporal.Namespace, "default")
+	assert.Equal(t, cfg.Temporal.Address, "temporal:7233")
+	assert.Equal(t, cfg.Temporal.TaskQueue, "queue")
 }

@@ -101,6 +101,8 @@ type Config struct {
 	SSUserName string `json:"ss_user_name"`
 	SSAPIKey   string `json:"ss_api_key"`
 
+	Temporal TemporalConfig `json:"temporal"`
+
 	// Location used for move workflow operations.
 	MoveLocationUUID string `json:"move_location_uuid"`
 
@@ -123,4 +125,10 @@ type Config struct {
 type Location struct {
 	UUID string `json:"uuid"`
 	Name string `json:"name"`
+}
+
+type TemporalConfig struct {
+	Namespace string `json:"namespace"`
+	Address   string `json:"address"`
+	TaskQueue string `json:"taskQueue"`
 }

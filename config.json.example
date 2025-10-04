@@ -2,6 +2,11 @@
   "ss_url": "http://storage-service.example.com:8000",
   "ss_user_name": "username",
   "ss_api_key": "api-key",
+  "temporal": {
+    "namespace": "move",
+    "address": "127.0.0.1:7233",
+    "taskQueue": "default-task-queue"
+  },
   "move_location_uuid": "location-uuid",
   "location_uuid": "source-location-uuid",
   "ss_manage_path": "/usr/share/archivematica/storage-service/manage.py",

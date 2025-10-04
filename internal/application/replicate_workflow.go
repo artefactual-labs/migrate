@@ -22,8 +22,6 @@ import (
 	"github.com/artefactual-labs/migrate/internal/storage_service"
 )
 
-const DEFAULT_TASKT_QUEUE = "default-task-queue"
-
 type ReplicateWorkflowParams struct {
 	UUID uuid.UUID
 }
