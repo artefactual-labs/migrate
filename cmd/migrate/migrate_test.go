@@ -21,5 +21,5 @@ func TestExecRequiresConfig(t *testing.T) {
 	)
 
 	err := exec(ctx, []string{"migrate", "replicate"}, stdin, stdout, stderr)
-	assert.Error(t, err, "open config.json: no such file or directory")
+	assert.Error(t, err, "config.json not found in standard locations")
 }

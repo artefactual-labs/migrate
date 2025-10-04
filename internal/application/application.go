@@ -21,14 +21,14 @@ import (
 type App struct {
 	logger *slog.Logger
 	DB     bob.DB
-	Config Config
+	Config *Config
 	Tc     client.Client
 
 	// A client to interact with the Storage Service API.
 	StorageClient *storage_service.API
 }
 
-func New(logger *slog.Logger, db bob.DB, cfg Config, temporalClient client.Client, storageClient *storage_service.API) *App {
+func New(logger *slog.Logger, db bob.DB, cfg *Config, temporalClient client.Client, storageClient *storage_service.API) *App {
 	return &App{
 		logger:        logger,
 		DB:            db,

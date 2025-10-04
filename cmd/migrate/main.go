@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -48,11 +47,9 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 	loggerOpts := &slog.HandlerOptions{Level: slog.LevelInfo}
 	logger := slog.New(slog.NewTextHandler(stderr, loggerOpts))
 
-	config := application.Config{}
-	if cfgFile, err := os.ReadFile("config.json"); err != nil {
+	cfg, err := application.LoadConfig()
+	if err != nil {
 		return err
-	} else if err := json.Unmarshal(cfgFile, &config); err != nil {
-		return fmt.Errorf("unmarshal config.json: %v", err)
 	}
 
 	db, err := initDatabase(ctx, "migrate.db")
@@ -60,7 +57,7 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 		return err
 	}
 
-	storageClient := storage_service.NewAPI(http.DefaultClient, config.SSURL, config.SSUserName, config.SSAPIKey)
+	storageClient := storage_service.NewAPI(http.DefaultClient, cfg.SSURL, cfg.SSUserName, cfg.SSAPIKey)
 
 	// Connect with Temporal Server.
 	// TODO(daniel): make all these options configurable.
@@ -89,7 +86,7 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 		}
 	}
 
-	app := application.New(logger, db, config, temporalClient, storageClient)
+	app := application.New(logger, db, cfg, temporalClient, storageClient)
 
 	if err := StartWorker(app); err != nil {
 		return fmt.Errorf("start worker: %v", err)

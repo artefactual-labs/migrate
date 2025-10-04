@@ -104,8 +104,16 @@ flowchart TD
 ### 1. Create a configuration file
 
 Copy the provided [config.example.json] to `config.json` and adjust the values
-for your environment. The `config.json` file must be placed in the same
-directory as the `migrate` binary.
+for your environment. The application looks for `config.json` in several
+locations, in this order:
+
+1. The current working directory
+2. The directory containing the `migrate` binary
+3. `$XDG_CONFIG_HOME/migrate` (or `%AppData%\migrate` on Windows)
+4. Your home directory
+
+The first readable file found wins. The parser accepts standard JSON, but also
+supports comments and trailing commas via [HuJSON].
 
 ### 2. Create input file
 
@@ -167,3 +175,4 @@ Each command writes the corresponding report (`move-report.csv` or
 [production deployment guide]: https://docs.temporal.io/production-deployment
 [releases page]: https://github.com/artefactual-labs/migrate/releases
 [config.example.json]: ./config.json.example
+[HuJSON]: https://github.com/tailscale/hujson

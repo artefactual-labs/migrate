@@ -9,6 +9,7 @@ require (
 	github.com/jaswdr/faker/v2 v2.8.0
 	github.com/rogpeppe/go-internal v1.14.1
 	github.com/stephenafamo/bob v0.41.1
+	github.com/tailscale/hujson v0.0.0-20250226034555-ec1d1c113d33
 	go.temporal.io/api v1.43.2
 	go.temporal.io/sdk v1.32.1
 	google.golang.org/protobuf v1.36.6
@@ -60,7 +61,6 @@ require (
 	github.com/stephenafamo/scan v0.7.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
-	github.com/tailscale/hujson v0.0.0-20250226034555-ec1d1c113d33 // indirect
 	github.com/ulikunitz/xz v0.5.12 // indirect
 	go.artefactual.dev/tools v0.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
