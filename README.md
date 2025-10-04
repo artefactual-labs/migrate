@@ -43,15 +43,25 @@ Migrate is the practical tool to get the job done.
 
 ## How it works
 
-Migrate separates **command submission** from **execution**:
+Migrate separates **preparation**, **command submission**, and **execution**:
 
-- The **client** (`migrate replicate` / `migrate move`) submits workflows to
-  Temporal.
-- The **worker** (`migrate worker`) picks up tasks and executes them: talks to
-  the Storage Service API, requests move or replication operations, checks
-  fixity, and updates the database.
-- The **SQLite DB** (`migrate.db`) keeps track of every AIP's state.
-- You can generate **reports** (`migrate export`) at any time.
+- **Preparation (`migrate load-input`)**:
+  Reads UUIDs from `input.txt`, inserts them into the local SQLite database,
+  queries Storage Service for their metadata, and produces an initial report.
+  This gives you a baseline snapshot of AIP states before running long
+  migrations.
+
+- **Command submission (`migrate replicate` / `migrate move`)**:
+  The client submits one workflow per AIP to Temporal.
+
+- **Execution (`migrate worker`)**:
+  Workers pick up tasks and execute them: talk to the Storage Service API,
+  request move or replication operations, check fixity, and update the
+  database.
+
+- **Tracking & reporting (`migrate export`)**:
+  The database keeps a durable record of every AIP’s state. At any time you can
+  generate CSV reports to monitor progress or validate results.
 
 The following diagram illustrates the basic architecture:
 
@@ -91,59 +101,11 @@ flowchart TD
 
 ## Configuration
 
-### 1. Create configuration file
+### 1. Create a configuration file
 
-Create a `config.json` file in the project root with the **actively used settings**:
-
-```json
-{
-  "ss_url": "http://your-storage-service:8000",
-  "ss_user_name": "your_username",
-  "ss_api_key": "your_api_key",
-  "move_location_uuid": "uuid-of-move-destination",
-  "location_uuid": "uuid-of-source-location",
-  "ss_manage_path": "/usr/share/archivematica/storage-service/manage.py",
-  "python_path": "/usr/bin/python3",
-  "docker": false,
-  "ss_container_name": "archivematica-storage-service",
-  "replication_locations": [
-    {
-      "uuid": "location-1-uuid",
-      "name": "Backup Location 1"
-    },
-    {
-      "uuid": "location-2-uuid",
-      "name": "Backup Location 2"
-    }
-  ],
-  "environment": {
-    "django_settings_module": "storage_service.settings.production",
-    "django_secret_key": "your-secret-key",
-    "django_allowed_hosts": "*",
-    "ss_gunicorn_bind": "0.0.0.0:8000",
-    "email_host": "localhost",
-    "ss_audit_log_middleware": "false",
-    "ss_db_url": "sqlite:///var/lib/archivematica/storage-service/storage_service.db",
-    "email_use_tls": "false",
-    "ss_prometheus_enabled": "false",
-    "default_from_email": "noreply@example.com",
-    "time_zone": "UTC",
-    "ss_gunicorn_workers": "2",
-    "requests_ca_bundle": ""
-  },
-  "dashboard": {
-    "manage_path": "/usr/share/archivematica/dashboard/manage.py",
-    "python_path": "/usr/bin/python3",
-    "lang": "en_US.UTF-8",
-    "django_settings_module": "settings.production",
-    "django_allowed_hosts": "*",
-    "django_secret_key": "your-dashboard-secret-key",
-    "gunicorn_bind": "0.0.0.0:8002",
-    "elastic_search_url": "http://your-elasticsearch:9200",
-    "ss_client_quick_timeout": "5"
-  }
-}
-```
+Copy the provided [config.example.json] to `config.json` and adjust the values
+for your environment. The `config.json` file must be placed in the same
+directory as the `migrate` binary.
 
 ### 2. Create input file
 
@@ -204,3 +166,4 @@ Each command writes the corresponding report (`move-report.csv` or
 [Temporal Cloud]: https://temporal.io/cloud
 [production deployment guide]: https://docs.temporal.io/production-deployment
 [releases page]: https://github.com/artefactual-labs/migrate/releases
+[config.example.json]: ./config.json.example

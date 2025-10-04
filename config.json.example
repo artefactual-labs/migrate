@@ -1,0 +1,32 @@
+{
+  "ss_url": "http://storage-service.example.com:8000",
+  "ss_user_name": "username",
+  "ss_api_key": "api-key",
+  "move_location_uuid": "location-uuid",
+  "location_uuid": "source-location-uuid",
+  "ss_manage_path": "/usr/share/archivematica/storage-service/manage.py",
+  "python_path": "/usr/bin/python3",
+  "docker": false,
+  "ss_container_name": "archivematica-storage-service",
+  "replication_locations": [
+    {
+      "uuid": "replica-location-1",
+      "name": "Replica Location 1"
+    }
+  ],
+  "environment": {
+    "django_settings_module": "storage_service.settings.production",
+    "django_secret_key": "secret",
+    "django_allowed_hosts": "*",
+    "ss_gunicorn_bind": "0.0.0.0:8000",
+    "email_host": "localhost",
+    "ss_audit_log_middleware": "false",
+    "ss_db_url": "sqlite:///var/lib/archivematica/storage-service/storage_service.db",
+    "email_use_tls": "false",
+    "ss_prometheus_enabled": "false",
+    "default_from_email": "noreply@example.com",
+    "time_zone": "UTC",
+    "ss_gunicorn_workers": "2",
+    "requests_ca_bundle": ""
+  }
+}
