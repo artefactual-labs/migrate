@@ -1,0 +1,43 @@
+version: 2
+project_name: migrate
+release:
+  github:
+    owner: artefactual-labs
+    name: migrate
+builds:
+  - id: migrate
+    main: ./cmd/migrate
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s
+      - -w
+      - -extldflags="-static"
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    env:
+      - CGO_ENABLED=0
+archives:
+  - formats:
+      - binary
+nfpms:
+  - id: default
+    package_name: migrate
+    formats: [deb, rpm]
+    vendor: Artefactual Systems Inc.
+    homepage: "https://github.com/artefactual-labs/migrate"
+    maintainer: Artefactual Systems Inc. <info@artefactual.com>
+    description: "Durable orchestration tool for migrating and replicating Archivematica AIPs at scale."
+    license: Apache 2.0"
+    dependencies: [ca-certificates]
+checksum:
+  name_template: "checksums.txt"
+changelog:
+  use: github
+  abbrev: 8
+  groups: []
