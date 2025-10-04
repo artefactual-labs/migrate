@@ -32,6 +32,7 @@ jobs:
     uses: ./.github/workflows/tests.yml
 
   release:
+    name: Release
     needs: [validate-version, tests]
     runs-on: ubuntu-latest
     permissions:
@@ -45,6 +46,10 @@ jobs:
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: ./go.mod
+      - name: Set git identity
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
       - name: Create local tag
         run: |
           V="${{ github.event.inputs.version }}"
