@@ -6,7 +6,7 @@ release:
     name: migrate
 builds:
   - id: migrate
-    main: ./cmd/migrate
+    main: .
     goos:
       - linux
       - darwin
