@@ -41,16 +41,17 @@ func (cfg *Config) Exec(ctx context.Context, _ []string) error {
 		return err
 	}
 
-	if err := runWorker(app); err != nil {
-		return fmt.Errorf("run worker: %w", err)
+	w := registerWorker(app)
+
+	if err := w.Start(); err != nil {
+		return fmt.Errorf("start worker: %w", err)
 	}
 
-	return nil
-}
+	<-ctx.Done()
 
-func runWorker(app *application.App) error {
-	w := registerWorker(app)
-	return w.Run(worker.InterruptCh())
+	w.Stop()
+
+	return nil
 }
 
 func registerWorker(app *application.App) worker.Worker {
