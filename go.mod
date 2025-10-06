@@ -7,6 +7,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/uuid v1.6.0
 	github.com/jaswdr/faker/v2 v2.8.1
+	github.com/peterbourgon/ff/v4 v4.0.0-alpha.4
 	github.com/rogpeppe/go-internal v1.14.1
 	github.com/stephenafamo/bob v0.41.1
 	github.com/tailscale/hujson v0.0.0-20250226034555-ec1d1c113d33
@@ -49,7 +50,6 @@ require (
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/nexus-rpc/sdk-go v0.3.0 // indirect
 	github.com/nwaples/rardecode/v2 v2.1.0 // indirect
-	github.com/peterbourgon/ff/v4 v4.0.0-alpha.4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/qdm12/reprint v0.0.0-20200326205758-722754a53494 // indirect

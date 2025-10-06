@@ -1,0 +1,14 @@
+! migrate export
+stderr 'missing export type'
+
+! migrate export unknown-type
+stderr 'unsupported export type: unknown-type'
+
+migrate export move
+stderr 'Move export generated'
+
+migrate export replicate
+stderr 'Success'
+
+-- config.json --
+{}

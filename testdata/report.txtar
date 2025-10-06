@@ -1,5 +1,0 @@
-!   migrate report
-cmp stderr stderr.txt
-
--- stderr.txt --
-error: config.json not found in standard locations

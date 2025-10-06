@@ -67,7 +67,7 @@ const (
 	AIPReplicationStatusFinished   AIPReplicationStatus = "finished"
 )
 
-func (a *App) Export(ctx context.Context) error {
+func (a *App) ExportMove(ctx context.Context) error {
 	err := os.RemoveAll("move-report.csv")
 	if err != nil {
 		return err
