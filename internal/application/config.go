@@ -95,30 +95,35 @@ func findConfigPath() (string, error) {
 	return "", fmt.Errorf("config.json not found in standard locations")
 }
 
+// Config represents the application configuration loaded from config.json.
+// Check out `config.json.example` for more details.
 type Config struct {
+	// Temporal workflow engine connection details.
+	Temporal TemporalConfig `json:"temporal"`
+
 	// Storage service API connection details.
 	SSURL      string `json:"ss_url"`
 	SSUserName string `json:"ss_user_name"`
 	SSAPIKey   string `json:"ss_api_key"`
 
-	Temporal TemporalConfig `json:"temporal"`
+	// Source location used for move and replicate workflows.
+	LocationUUID string `json:"location_uuid"`
 
 	// Location used for move workflow operations.
 	MoveLocationUUID string `json:"move_location_uuid"`
 
-	// Shared location used by move and replicate workflows.
-	LocationUUID string `json:"location_uuid"`
-
-	// Replication targets available to the workflow.
+	// Replication targets available to the replicate workflow.
 	ReplicationLocations []Location `json:"replication_locations"`
 
-	// Storage service command execution settings.
-	SSManagePath    string `json:"ss_manage_path"`
-	PythonPath      string `json:"python_path"`
+	// Whether we'll use `docker exec` or `exec.Command` to run SS management commands.
 	Docker          bool   `json:"docker"`
 	SSContainerName string `json:"ss_container_name"`
 
-	// Environment variables for storage service commands.
+	// Paths to the SS management command and Python interpreter.
+	SSManagePath string `json:"ss_manage_path"`
+	PythonPath   string `json:"python_path"`
+
+	// Only used by exec.Command, not Docker.
 	Environment map[string]string `json:"environment"`
 }
 

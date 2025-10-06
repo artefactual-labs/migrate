@@ -1,37 +1,80 @@
 {
-  "ss_url": "http://storage-service.example.com:8000",
-  "ss_user_name": "username",
-  "ss_api_key": "api-key",
+  // ===========================================================================
+  // TEMPORAL (workflow engine) configuration
+  // ---------------------------------------------------------------------------
+  // Connection details for the Temporal server used to orchestrate migration
+  // workflows. Temporal runs and tracks long-lived workflows such as move and
+  // replication tasks. Point these values to a reachable Temporal deployment.
   "temporal": {
-    "namespace": "move",
+    // Namespace on the Temporal server (commonly "default" for local setups).
+    "namespace": "default",
+    // Host and port where the Temporal frontend is reachable (host:port).
     "address": "127.0.0.1:7233",
+    // Task queue that workers poll for workflows and activity tasks.
     "taskQueue": "default-task-queue"
   },
-  "move_location_uuid": "location-uuid",
+
+  // ===========================================================================
+  // ARCHIVEMATICA STORAGE SERVICE (SS) API
+  // ---------------------------------------------------------------------------
+  // Base connection settings for the Archivematica Storage Service API. These
+  // values are used whenever the application needs to query the Storage Service
+  // or invoke management commands (for example, to create replicas).
+  "ss_url": "http://localhost:62081",
+  // Username used to authenticate API requests to the Storage Service.
+  "ss_user_name": "test",
+  // API key or token used to authenticate to the Storage Service API.
+  "ss_api_key": "test",
+
+  // ============================================================================
+  // LOCATION SETTINGS
+  // ---------------------------------------------------------------------------
+  // UUID of the source location that currently holds the AIPs to be moved or
+  // replicated. You can find location UUIDs in the Storage Service UI or by
+  // calling the SS API (for example: GET /locations/).
   "location_uuid": "source-location-uuid",
-  "ss_manage_path": "/usr/share/archivematica/storage-service/manage.py",
-  "python_path": "/usr/bin/python3",
-  "docker": false,
-  "ss_container_name": "archivematica-storage-service",
+
+  // Destination location UUID for move operations. When performing a move,
+  // AIPs will be transferred from `location_uuid` to `move_location_uuid`.
+  // This field is ignored for replication operations.
+  "move_location_uuid": "location-uuid",
+
+  // List of locations to which AIPs will be replicated. Each entry must have
+  // a `uuid` and a human-friendly `name`. Add multiple entries to replicate
+  // an AIP to several locations.
   "replication_locations": [
     {
       "uuid": "replica-location-1",
       "name": "Replica Location 1"
     }
   ],
+
+  // ============================================================================
+  // REPLICATION EXECUTION MODE
+  // ---------------------------------------------------------------------------
+  // Whether `migrate` should run Storage Service management commands inside a
+  // Docker container or directly on the host. If `true`, the tool will use
+  // `docker exec` to run management commands inside the container named below.
+  // If `false`, commands will be executed on the host directly.
+  "docker": true,
+
+  // When `docker` is true, the name of the container that runs the Storage
+  // Service. The container must be running and `docker exec` must be allowed.
+  "ss_container_name": "am-archivematica-storage-service-1",
+
+  // The Python interpreter to. Examples: "python3" or a full path such as
+  // "/usr/bin/python3" or a virtualenv interpreter.
+  "python_path": "python3",
+
+  // Path to the Django 'manage.py' entrypoint for the Storage Service.
+  "ss_manage_path": "/src/src/archivematica/storage_service/manage.py",
+
+  // Environment variables that will be provided to the Storage Service process
+  // when management commands are executed. Customize these to match your
+  // Storage Service deployment. This is not needed when running commands inside
+  // Docker since the container already has the correct environment.
   "environment": {
-    "DJANGO_SETTINGS_MODULE": "storage_service.settings.production",
-    "DJANGO_SECRET_KEY": "secret",
-    "DJANGO_ALLOWED_HOSTS": "*",
-    "SS_GUNICORN_BIND": "0.0.0.0:8000",
-    "EMAIL_HOST": "localhost",
-    "SS_AUDIT_LOG_MIDDLEWARE": "false",
-    "SS_DB_URL": "sqlite:///var/lib/archivematica/storage-service/storage_service.db",
-    "EMAIL_USE_TLS": "false",
-    "SS_PROMETHEUS_ENABLED": "false",
-    "DEFAULT_FROM_EMAIL": "noreply@example.com",
-    "TIME_ZONE": "UTC",
-    "SS_GUNICORN_WORKERS": "2",
-    "REQUESTS_CA_BUNDLE": ""
+    // For example, you may need to set the Django settings module.
+    "DJANGO_SETTINGS_MODULE": "archivematica.storage_service.storage_service.settings.local"
   }
 }
