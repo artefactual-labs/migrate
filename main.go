@@ -40,7 +40,17 @@ func main() {
 	}
 }
 
-func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) (err error) {
+func exec(ctx context.Context, args []string, _ io.Reader, stdout, stderr io.Writer) (err error) {
+	if len(args) == 0 {
+		return errors.New("missing command")
+	}
+
+	command := args[0]
+
+	if command == "list-filter" {
+		return runListFilter(stdout)
+	}
+
 	loggerOpts := &slog.HandlerOptions{Level: slog.LevelInfo}
 	logger := slog.New(slog.NewTextHandler(stderr, loggerOpts))
 
@@ -56,7 +66,6 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 
 	storageClient := storage_service.NewAPI(http.DefaultClient, cfg.SSURL, cfg.SSUserName, cfg.SSAPIKey)
 
-	// Connect with Temporal Server.
 	temporalClient, err := client.Dial(client.Options{
 		Namespace: cfg.Temporal.Namespace,
 		HostPort:  cfg.Temporal.Address,
@@ -86,11 +95,6 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 	if err != nil {
 		return fmt.Errorf("validate UUIDs: %v", err)
 	}
-
-	if len(args) == 0 {
-		return errors.New("missing command")
-	}
-	command := args[0]
 
 	switch command {
 	case "worker":
@@ -208,7 +212,51 @@ func exec(ctx context.Context, args []string, _ io.Reader, _, stderr io.Writer) 
 		if err != nil {
 			return fmt.Errorf("export replication: %v", err)
 		}
+	default:
+		return fmt.Errorf("unsupported command: %s", command)
 	}
+
+	return nil
+}
+
+func runListFilter(stdout io.Writer) error {
+	filterList, err := readLines("to_filter_out.txt")
+	if err != nil {
+		return fmt.Errorf("read to_filter_out.txt: %v", err)
+	}
+
+	if _, err := application.ValidateUUIDs(filterList); err != nil {
+		return fmt.Errorf("validate to_filter_out.txt: %v", err)
+	}
+
+	originalList, err := readLines("original_list.txt")
+	if err != nil {
+		return fmt.Errorf("read original_list.txt: %v", err)
+	}
+	if _, err := application.ValidateUUIDs(originalList); err != nil {
+		return fmt.Errorf("validate original_list.txt: %v", err)
+	}
+
+	filterSet := make(map[string]struct{}, len(filterList))
+	for _, v := range filterList {
+		filterSet[v] = struct{}{}
+	}
+
+	finalList := make([]string, 0, len(originalList))
+	for _, v := range originalList {
+		if _, exists := filterSet[v]; exists {
+			continue
+		}
+		finalList = append(finalList, v)
+	}
+
+	if err := writeLines("final_list.txt", finalList); err != nil {
+		return fmt.Errorf("write final_list.txt: %v", err)
+	}
+
+	printf(stdout, "Original Count: %d\n", len(originalList))
+	printf(stdout, "To Filter Count: %d\n", len(filterList))
+	printf(stdout, "Final Count: %d\n", len(finalList))
 
 	return nil
 }
@@ -236,13 +284,11 @@ func initDatabase(ctx context.Context, datasource string) (db bob.DB, err error)
 	return db, nil
 }
 
-// RunWorker blocks.
 func RunWorker(app *application.App) error {
 	w := registerWorker(app)
 	return w.Run(worker.InterruptCh())
 }
 
-// StartWorker doesn't block.
 func StartWorker(app *application.App) error {
 	w := registerWorker(app)
 	return w.Start()
@@ -273,4 +319,45 @@ func registerWorker(app *application.App) worker.Worker {
 	w.RegisterActivityWithOptions(app.MoveA, activity.RegisterOptions{Name: application.MoveActivityName})
 
 	return w
+}
+
+func printf(w io.Writer, format string, args ...any) {
+	_, _ = fmt.Fprintf(w, format, args...)
+}
+
+func readLines(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { err = errors.Join(err, f.Close()) }()
+
+	var lines []string
+	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		if scanner.Text() == "" {
+			continue
+		}
+		lines = append(lines, scanner.Text())
+	}
+
+	return lines, errors.Join(err, scanner.Err())
+}
+
+func writeLines(path string, lines []string) (err error) {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, f.Close()) }()
+
+	w := bufio.NewWriter(f)
+	for _, line := range lines {
+		if _, werr := fmt.Fprintln(w, line); werr != nil {
+			return werr
+		}
+	}
+
+	return errors.Join(err, w.Flush())
 }

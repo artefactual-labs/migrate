@@ -1,4 +1,4 @@
-list-filter
+migrate list-filter
 cmp stdout want_stdout.txt
 exec cat final_list.txt
 cmp stdout want_final_list.txt

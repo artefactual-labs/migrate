@@ -8,5 +8,4 @@ config.json
 /dist
 
 # Binaries.
-/list-filter
 /migrate

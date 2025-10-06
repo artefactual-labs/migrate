@@ -126,13 +126,15 @@ Create an `input.txt` file containing the UUIDs of AIPs you want to process
 abcdef01-2345-6789-abcd-ef0123456789
 ```
 
-If you need to trim an existing UUID list before loading it, a small helper
-command lives in `cmd/list-filter`. See its README for usage details.
+If you need to trim an existing UUID list before loading it, use the
+`migrate list-filter` subcommand. Place `original_list.txt` and
+`to_filter_out.txt` in the current directory, run `migrate list-filter`, and
+then use the generated `final_list.txt` as your filtered list.
 
 ### 3. Load input file
 
 ```bash
-./migrate load-input
+migrate load-input
 ```
 
 This validates the UUIDs in `input.txt` and initializes them in the database.
@@ -140,7 +142,7 @@ This validates the UUIDs in `input.txt` and initializes them in the database.
 ### 4. Start worker process
 
 ```bash
-./migrate worker
+migrate worker
 ```
 
 This starts a worker process that handles Temporal workflows. Keep this
