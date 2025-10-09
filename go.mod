@@ -7,6 +7,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/uuid v1.6.0
 	github.com/jaswdr/faker/v2 v2.8.1
+	github.com/pelletier/go-toml/v2 v2.0.9
 	github.com/peterbourgon/ff/v4 v4.0.0-alpha.4
 	github.com/rogpeppe/go-internal v1.14.1
 	github.com/stephenafamo/bob v0.41.1
