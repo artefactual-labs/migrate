@@ -11,6 +11,21 @@ import (
 	"github.com/artefactual-labs/migrate/internal/database/gen/models"
 )
 
+type Action struct {
+	name string
+}
+
+func (a Action) String() string {
+	return a.name
+}
+
+var (
+	ActionFind      = Action{"find"}
+	ActionMove      = Action{"move"}
+	ActionReplicate = Action{"Replicate"}
+	ActionIndex     = Action{"index"}
+)
+
 type Event struct {
 	Action  Action
 	Start   time.Time

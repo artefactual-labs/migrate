@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
+	"math"
 	"os/exec"
 	"sort"
 	"strings"
@@ -268,6 +270,7 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 		if eventErr := EndEventErr(ctx, a, e, aip, err.Error()); eventErr != nil {
 			return nil, errors.Join(err, eventErr)
 		}
+		logger.Error("ERROR", "error", err.Error(), "output", string(output))
 		return nil, err
 	} else {
 		e.AddDetail(string(output))
@@ -418,6 +421,55 @@ func (a *App) updateReplicateAIPStatus(ctx context.Context, aip *models.AipRepli
 		Status: omit.From(string(status)),
 	}); err != nil {
 		return err
+	}
+	return nil
+}
+
+// find checks if the AIPs exist in the Storage Service and updates their status
+// accordingly.
+func find(ctx context.Context, logger *slog.Logger, a *App, storageClient *storage_service.API, aips ...*models.Aip) error {
+	logger.Info(fmt.Sprintf("Finding %d AIPS", len(aips)))
+	for _, aip := range aips {
+		e := StartEvent(ActionFind)
+		ssPackage, err := storageClient.Packages.GetByID(ctx, aip.UUID)
+		if err != nil {
+			if errors.Is(err, storage_service.ErrNotFound) {
+				if eventErr := EndEventErr(ctx, a, e, aip, "AIP not found in Storage Service"); eventErr != nil {
+					return eventErr
+				}
+				if err := a.UpdateAIPStatus(ctx, aip.ID, AIPStatusNotFound); err != nil {
+					return err
+				}
+				continue
+			}
+			return err
+		}
+
+		logger.Info("AIP found", "UUID", ssPackage.UUID)
+		sizeVal := omitnull.Val[int64]{}
+		if ssPackage.Size > math.MaxInt64 {
+			logger.Warn("package size exceeds supported range", "uuid", ssPackage.UUID, "size", ssPackage.Size)
+		} else {
+			sizeVal = omitnull.From(int64(ssPackage.Size))
+		}
+
+		found := true
+		status := AIPStatusFound
+		if ssPackage.Status == "Deleted" {
+			found = false
+			status = AIPStatusDeleted
+		}
+		if err := a.UpdateAIP(ctx, aip.ID,
+			&models.AipSetter{
+				Found: omit.From(found),
+				Size:  sizeVal,
+			},
+		); err != nil {
+			return err
+		}
+		if err := EndEvent(ctx, status, a, e, aip); err != nil {
+			return err
+		}
 	}
 	return nil
 }
