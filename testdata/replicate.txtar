@@ -1,0 +1,49 @@
+temporal --update-config
+ssmock start -config ssmock.toml --update-config
+exec cat config.json
+migrate load-input
+migrate worker &worker&
+migrate replicate
+kill worker
+migrate export replicate
+
+exec cat replication-report.csv
+exec sqlite3 -header -csv migrate.db 'SELECT * FROM aips;'
+exec sqlite3 -header -csv migrate.db 'SELECT * FROM aip_replication;'
+
+ssmock snapshot
+cmp stdout ssmock-snapshot.toml
+
+-- input.txt --
+2faa61dc-ed33-49f4-8b36-954f203bab4a
+-- config.json --
+{
+  "location_uuid": "72a9c518-2747-4cb5-aeba-e6309d946e79",
+  "replication_locations": [
+    {
+      "uuid": "71cb2196-5629-4225-aaf7-d8431b0895c4",
+      "name": "Replica Location 1"
+    }
+  ]
+}
+-- ssmock.toml --
+[[location]]
+id = "72a9c518-2747-4cb5-aeba-e6309d946e79"
+  [[location.packages]]
+  id = "2faa61dc-ed33-49f4-8b36-954f203bab4a"
+[[location]]
+id = "71cb2196-5629-4225-aaf7-d8431b0895c4"
+-- ssmock-snapshot.toml --
+[[location]]
+id = '72a9c518-2747-4cb5-aeba-e6309d946e79'
+
+[[location.packages]]
+id = '2faa61dc-ed33-49f4-8b36-954f203bab4a'
+status = 'UPLOADED'
+
+[[location]]
+id = '71cb2196-5629-4225-aaf7-d8431b0895c4'
+
+[[location.packages]]
+id = '2faa61dc-ed33-49f4-8b36-954f203bab4b'
+status = 'UPLOADED'

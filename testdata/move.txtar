@@ -1,0 +1,48 @@
+temporal --update-config
+ssmock start -config ssmock.toml --update-config
+migrate load-input
+migrate worker &worker&
+migrate move
+kill worker
+migrate export move
+
+exec cat move-report.csv
+cmp move-report.csv move-report.expected.csv
+
+exec sqlite3 -header -csv migrate.db 'SELECT * FROM aips;'
+cmp stdout db.aips.expected.csv
+! stderr .
+
+ssmock snapshot
+cmp stdout ssmock-snapshot.toml
+
+-- input.txt --
+2faa61dc-ed33-49f4-8b36-954f203bab4a
+-- config.json --
+{
+  "location_uuid": "72a9c518-2747-4cb5-aeba-e6309d946e79",
+  "move_location_uuid": "71cb2196-5629-4225-aaf7-d8431b0895c4"
+}
+-- ssmock.toml --
+[[location]]
+id = "72a9c518-2747-4cb5-aeba-e6309d946e79"
+  [[location.packages]]
+  id = "2faa61dc-ed33-49f4-8b36-954f203bab4a"
+[[location]]
+id = "71cb2196-5629-4225-aaf7-d8431b0895c4"
+-- ssmock-snapshot.toml --
+[[location]]
+id = '72a9c518-2747-4cb5-aeba-e6309d946e79'
+
+[[location]]
+id = '71cb2196-5629-4225-aaf7-d8431b0895c4'
+
+[[location.packages]]
+id = '2faa61dc-ed33-49f4-8b36-954f203bab4a'
+status = 'UPLOADED'
+-- move-report.expected.csv --
+UUID,AIPStatus,Duration,fixity-run,moved,cleaned,replicated,re-indexed,size,Duration Nanoseconds,New Path,Old Path,Replica UUID,Local copy Path,Staged Copy Path,Errors
+2faa61dc-ed33-49f4-8b36-954f203bab4a,moved,Not Done,Done,Not Done,Not Done,Not Done,0 B,
+-- db.aips.expected.csv --
+id,uuid,status,found,fixity_run,moved,cleaned,replicated,re_indexed,current_location,size,location_uuid
+1,2faa61dc-ed33-49f4-8b36-954f203bab4a,moved,1,0,1,0,0,0,/api/v2/location/71cb2196-5629-4225-aaf7-d8431b0895c4/|/api/v2/location/72a9c518-2747-4cb5-aeba-e6309d946e79/,0,

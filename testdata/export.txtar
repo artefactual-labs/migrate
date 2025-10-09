@@ -1,16 +1,16 @@
+temporal --update-config
+
 ! migrate export
 stderr 'missing export type'
 
-# This does not make sense, but it is what it is.
-
 ! migrate export unknown-type
-stderr 'connection refused'
+stderr 'unsupported export type: unknown-type'
 
-! migrate export move
-stderr 'connection refused'
+migrate export move
+stderr 'Move export generated'
 
-! migrate export replicate
-stderr 'connection refused'
+migrate export replicate
+stderr 'Success!'
 
 -- config.json --
 {}

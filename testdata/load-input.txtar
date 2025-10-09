@@ -1,0 +1,21 @@
+temporal --update-config
+ssmock start -config ssmock.toml --update-config
+migrate load-input
+! stdout .
+stderr 'Success'
+exec sqlite3 -header -csv migrate.db 'SELECT * FROM aips WHERE status = ''found'';'
+exec sqlite3 -header -csv migrate.db 'SELECT COUNT(*) = 1 FROM aips WHERE id = 1 AND uuid = ''2faa61dc-ed33-49f4-8b36-954f203bab4a'' AND status = ''found'' AND found = 1;'
+stdout '.*\n1'
+-- input.txt --
+2faa61dc-ed33-49f4-8b36-954f203bab4a
+-- config.json --
+{}
+-- ssmock.toml --
+[server]
+listen = "127.0.0.1:9000"
+[[location]]
+id = "72a9c518-2747-4cb5-aeba-e6309d946e79"
+  [[location.packages]]
+  id = "2faa61dc-ed33-49f4-8b36-954f203bab4a"
+[[location]]
+id = "71cb2196-5629-4225-aaf7-d8431b0895c4"

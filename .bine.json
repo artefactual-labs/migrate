@@ -16,6 +16,12 @@
       "name": "deadcode",
       "go_package": "golang.org/x/tools/cmd/deadcode",
       "version": "0.37.0"
+    },
+    {
+      "name": "temporal",
+      "url": "https://github.com/temporalio/cli",
+      "version": "1.4.1",
+      "asset_pattern": "temporal_cli_{version}_{goos}_{goarch}.tar.gz"
     }
   ]
 }
