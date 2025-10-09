@@ -7,13 +7,13 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/uuid v1.6.0
 	github.com/jaswdr/faker/v2 v2.8.1
-	github.com/pelletier/go-toml/v2 v2.0.9
-	github.com/peterbourgon/ff/v4 v4.0.0-alpha.4
+	github.com/pelletier/go-toml/v2 v2.2.4
+	github.com/peterbourgon/ff/v4 v4.0.0-beta.1
 	github.com/rogpeppe/go-internal v1.14.1
 	github.com/stephenafamo/bob v0.41.1
 	github.com/tailscale/hujson v0.0.0-20250226034555-ec1d1c113d33
 	go.temporal.io/api v1.53.0
-	go.temporal.io/sdk v1.36.0
+	go.temporal.io/sdk v1.37.0
 	gotest.tools/v3 v3.5.2
 	modernc.org/sqlite v1.39.0
 )
