@@ -11,7 +11,7 @@
     // Host and port where the Temporal frontend is reachable (host:port).
     "address": "127.0.0.1:7233",
     // Task queue that workers poll for workflows and activity tasks.
-    "taskQueue": "default-task-queue"
+    "task_queue": "default-task-queue"
   },
 
   // ===========================================================================

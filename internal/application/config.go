@@ -33,6 +33,11 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("unmarshal config.json: %w", err)
 	}
 
+	// Set defaults.
+	if cfg.Temporal.TaskQueue == "" {
+		cfg.Temporal.TaskQueue = "default"
+	}
+
 	return cfg, nil
 }
 
@@ -135,5 +140,5 @@ type Location struct {
 type TemporalConfig struct {
 	Namespace string `json:"namespace"`
 	Address   string `json:"address"`
-	TaskQueue string `json:"taskQueue"`
+	TaskQueue string `json:"task_queue"`
 }
