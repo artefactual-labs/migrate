@@ -47,6 +47,11 @@ nfpms:
     overrides:
       rpm:
         contents:
+          - src: ./hack/temporal-cli/linux-{{ .Arch }}/temporal
+            dst: /usr/bin/temporal
+            type: file
+            file_info:
+              mode: 493
           - src: ./hack/temporal-cli/LICENSE
             dst: /usr/share/licenses/{{ .PackageName }}/temporal-cli.LICENSE
             type: file
@@ -54,6 +59,11 @@ nfpms:
               mode: 420
       deb:
         contents:
+          - src: ./hack/temporal-cli/linux-{{ .Arch }}/temporal
+            dst: /usr/bin/temporal
+            type: file
+            file_info:
+              mode: 493
           - src: ./hack/temporal-cli/LICENSE
             dst: /usr/share/doc/{{ .PackageName }}/temporal-cli.LICENSE
             type: file
