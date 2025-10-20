@@ -9,3 +9,4 @@ config.json
 
 # Binaries.
 /migrate
+/hack/temporal-cli/

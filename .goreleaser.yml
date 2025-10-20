@@ -4,6 +4,9 @@ release:
   github:
     owner: artefactual-labs
     name: migrate
+before:
+  hooks:
+    - ./hack/fetch-temporal-cli.sh
 builds:
   - id: migrate
     main: .
@@ -33,8 +36,29 @@ nfpms:
     homepage: "https://github.com/artefactual-labs/migrate"
     maintainer: Artefactual Systems Inc. <info@artefactual.com>
     description: "Durable orchestration tool for migrating and replicating Archivematica AIPs at scale."
-    license: Apache 2.0"
+    license: Apache 2.0
     dependencies: [ca-certificates]
+    contents:
+      - src: ./hack/temporal-cli/linux-{{ .Arch }}/temporal
+        dst: /usr/bin/temporal
+        type: file
+        file_info:
+          mode: 493
+    overrides:
+      rpm:
+        contents:
+          - src: ./hack/temporal-cli/LICENSE
+            dst: /usr/share/licenses/{{ .PackageName }}/temporal-cli.LICENSE
+            type: file
+            file_info:
+              mode: 420
+      deb:
+        contents:
+          - src: ./hack/temporal-cli/LICENSE
+            dst: /usr/share/doc/{{ .PackageName }}/temporal-cli.LICENSE
+            type: file
+            file_info:
+              mode: 420
 checksum:
   name_template: "checksums.txt"
 changelog:
