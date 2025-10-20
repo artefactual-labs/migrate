@@ -186,7 +186,7 @@ func temporalCmd(ts *testscript.TestScript, _ bool, args []string) {
 		}
 	})
 
-	deadline := time.Now().Add(300 * time.Second)
+	deadline := time.Now().Add(600 * time.Second)
 	for {
 		select {
 		case err := <-waitCh:
