@@ -11,13 +11,18 @@ import (
 	"github.com/tailscale/hujson"
 )
 
-func LoadConfig() (*Config, error) {
+func LoadConfig() (*Config, string, error) {
 	path, err := FindConfigPath()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return LoadConfigAt(path)
+	cfg, err := LoadConfigAt(path)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return cfg, path, nil
 }
 
 func LoadConfigAt(path string) (*Config, error) {
@@ -106,10 +111,6 @@ func FindConfigPath() (string, error) {
 
 	if cfgDir, err := os.UserConfigDir(); err == nil {
 		add(filepath.Join(cfgDir, "migrate", name))
-	}
-
-	if home, err := os.UserHomeDir(); err == nil {
-		add(filepath.Join(home, name))
 	}
 
 	var errs []error

@@ -88,10 +88,12 @@ func (cfg *RootConfig) App(ctx context.Context) (*application.App, error) {
 }
 
 func (cfg *RootConfig) initApp(ctx context.Context) (*application.App, error) {
-	config, err := application.LoadConfig()
+	config, path, err := application.LoadConfig()
 	if err != nil {
 		return nil, err
 	}
+
+	cfg.Logger().Info("Loaded config.", slog.String("path", path))
 
 	db, err := initDatabase(ctx, config.Database.SQLite.Path)
 	if err != nil {

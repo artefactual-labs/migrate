@@ -28,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 		_ = os.Remove(configPath)
 	})
 
-	cfg, err := LoadConfig()
+	cfg, _, err := LoadConfig()
 	assert.NilError(t, err)
 
 	assert.Equal(t, cfg.StorageService.API.URL, "http://localhost:62081")
