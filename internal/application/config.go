@@ -12,30 +12,53 @@ import (
 )
 
 func LoadConfig() (*Config, error) {
-	cfg := &Config{}
-
-	path, err := findConfigPath()
+	path, err := FindConfigPath()
 	if err != nil {
 		return nil, err
 	}
 
+	return LoadConfigAt(path)
+}
+
+func LoadConfigAt(path string) (*Config, error) {
+	cfg := &Config{}
+
+	if err := decodeConfigFile(path, cfg); err != nil {
+		return nil, err
+	}
+
+	if err := normalizeConfig(cfg); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
+func decodeConfigFile(path string, cfg *Config) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read config.json: %w", err)
+		return fmt.Errorf("read config.json: %w", err)
 	}
 
 	standard, err := hujson.Standardize(data)
 	if err != nil {
-		return nil, fmt.Errorf("parse config.json: %w", err)
+		return fmt.Errorf("parse config.json: %w", err)
 	}
 
 	if err := json.Unmarshal(standard, cfg); err != nil {
-		return nil, fmt.Errorf("unmarshal config.json: %w", err)
+		return fmt.Errorf("unmarshal config.json: %w", err)
 	}
 
-	// Set defaults.
+	return nil
+}
+
+func normalizeConfig(cfg *Config) error {
 	if cfg.Temporal.TaskQueue == "" {
 		cfg.Temporal.TaskQueue = "default"
+	}
+
+	if err := cfg.StorageService.applyDefaults(); err != nil {
+		return err
 	}
 
 	if cfg.Database.Engine == "" {
@@ -44,16 +67,16 @@ func LoadConfig() (*Config, error) {
 	switch cfg.Database.Engine {
 	case "sqlite":
 		if cfg.Database.SQLite.Path == "" {
-			cfg.Database.SQLite.Path = defaultSQLitePath()
+			cfg.Database.SQLite.Path = DefaultSQLitePath()
 		}
 	default:
-		return nil, fmt.Errorf("unsupported database engine %q", cfg.Database.Engine)
+		return fmt.Errorf("unsupported database engine %q", cfg.Database.Engine)
 	}
 
-	return cfg, nil
+	return nil
 }
 
-func findConfigPath() (string, error) {
+func FindConfigPath() (string, error) {
 	const name = "config.json"
 
 	var candidates []string
@@ -112,6 +135,33 @@ func findConfigPath() (string, error) {
 	return "", fmt.Errorf("config.json not found in standard locations")
 }
 
+func DefaultConfig() *Config {
+	cfg := &Config{
+		Database: DatabaseConfig{
+			Engine: "sqlite",
+			SQLite: SQLiteConfig{
+				Path: DefaultSQLitePath(),
+			},
+		},
+		Temporal: TemporalConfig{
+			Namespace: "default",
+			Address:   "127.0.0.1:7233",
+			TaskQueue: "default",
+		},
+	}
+
+	_ = cfg.StorageService.applyDefaults()
+
+	return cfg
+}
+
+func ApplyDefaults(cfg *Config) error {
+	if cfg == nil {
+		return errors.New("nil config")
+	}
+	return normalizeConfig(cfg)
+}
+
 // Config represents the application configuration loaded from config.json.
 // Check out `config.json.example` for more details.
 type Config struct {
@@ -121,34 +171,76 @@ type Config struct {
 	// Temporal workflow engine connection details.
 	Temporal TemporalConfig `json:"temporal"`
 
-	// Storage service API connection details.
-	SSURL      string `json:"ss_url"`
-	SSUserName string `json:"ss_user_name"`
-	SSAPIKey   string `json:"ss_api_key"`
+	// Storage Service configuration.
+	StorageService StorageServiceConfig `json:"storage_service"`
+}
 
-	// Source location used for move and replicate workflows.
-	LocationUUID string `json:"location_uuid"`
+type TemporalConfig struct {
+	Namespace string `json:"namespace"`
+	Address   string `json:"address"`
+	TaskQueue string `json:"task_queue"`
+}
 
-	// Location used for move workflow operations.
-	MoveLocationUUID string `json:"move_location_uuid"`
+type StorageServiceConfig struct {
+	API        StorageServiceAPIConfig        `json:"api"`
+	Management StorageServiceManagementConfig `json:"management"`
+	Locations  StorageServiceLocationConfig   `json:"locations"`
+}
 
-	// Replication targets available to the replicate workflow.
-	ReplicationLocations []Location `json:"replication_locations"`
+func (c *StorageServiceConfig) applyDefaults() error {
+	if c.Management.Mode == "" {
+		if c.Management.Docker.Container != "" {
+			c.Management.Mode = "docker"
+		} else {
+			c.Management.Mode = "host"
+		}
+	}
 
-	// Whether we'll use `docker exec` or `exec.Command` to run SS management commands.
-	Docker          bool   `json:"docker"`
-	SSContainerName string `json:"ss_container_name"`
+	switch c.Management.Mode {
+	case "docker":
+	case "host":
+		if c.Management.Host.PythonPath == "" {
+			c.Management.Host.PythonPath = "python3"
+		}
+	default:
+		return fmt.Errorf("unsupported storage_service.management.mode %q", c.Management.Mode)
+	}
 
-	// Paths to the SS management command and Python interpreter.
-	SSManagePath string `json:"ss_manage_path"`
-	PythonPath   string `json:"python_path"`
+	return nil
+}
 
-	// Only used by exec.Command, not Docker.
+type StorageServiceAPIConfig struct {
+	URL      string `json:"url"`
+	Username string `json:"username"`
+	APIKey   string `json:"api_key"`
+}
+
+type StorageServiceManagementConfig struct {
+	Mode string `json:"mode"`
+
+	Docker StorageServiceDockerConfig `json:"docker"`
+	Host   StorageServiceHostConfig   `json:"host"`
+}
+
+type StorageServiceDockerConfig struct {
+	Container  string `json:"container"`
+	ManagePath string `json:"manage_path"`
+}
+
+type StorageServiceHostConfig struct {
+	PythonPath  string            `json:"python_path"`
+	ManagePath  string            `json:"manage_path"`
 	Environment map[string]string `json:"environment"`
 }
 
-type Location struct {
-	UUID string `json:"uuid"`
+type StorageServiceLocationConfig struct {
+	SourceLocationID     string              `json:"source_location_id"`
+	MoveTargetLocationID string              `json:"move_target_location_id"`
+	ReplicationTargets   []ReplicationTarget `json:"replication_targets"`
+}
+
+type ReplicationTarget struct {
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -161,7 +253,7 @@ type SQLiteConfig struct {
 	Path string `json:"path"`
 }
 
-func defaultSQLitePath() string {
+func DefaultSQLitePath() string {
 	dir, err := os.UserConfigDir()
 	if err == nil && dir != "" {
 		if _, statErr := os.Stat(dir); statErr == nil {
@@ -169,10 +261,4 @@ func defaultSQLitePath() string {
 		}
 	}
 	return "migrate.db"
-}
-
-type TemporalConfig struct {
-	Namespace string `json:"namespace"`
-	Address   string `json:"address"`
-	TaskQueue string `json:"task_queue"`
 }

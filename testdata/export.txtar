@@ -13,4 +13,11 @@ migrate export replicate
 stderr 'Success!'
 
 -- config.json --
-{}
+{
+  "storage_service": {
+    "locations": {
+      "source_location_id": "72a9c518-2747-4cb5-aeba-e6309d946e79",
+      "replication_targets": []
+    }
+  }
+}

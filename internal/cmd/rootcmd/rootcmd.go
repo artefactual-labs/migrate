@@ -100,7 +100,8 @@ func (cfg *RootConfig) initApp(ctx context.Context) (*application.App, error) {
 
 	logger := cfg.Logger()
 
-	storageClient := storage_service.NewAPI(http.DefaultClient, config.SSURL, config.SSUserName, config.SSAPIKey)
+	apiCfg := config.StorageService.API
+	storageClient := storage_service.NewAPI(http.DefaultClient, apiCfg.URL, apiCfg.Username, apiCfg.APIKey)
 
 	temporalClient, err := client.Dial(client.Options{
 		Namespace: config.Temporal.Namespace,

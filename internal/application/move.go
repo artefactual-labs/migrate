@@ -57,7 +57,7 @@ func move(ctx context.Context, logger *slog.Logger, a *App, storageClient *stora
 		if err != nil {
 			continue
 		}
-		if strings.Contains(ssPackage.CurrentLocation, a.Config.MoveLocationUUID) && ssPackage.Status == "UPLOADED" {
+		if strings.Contains(ssPackage.CurrentLocation, a.Locations.MoveTargetLocationID) && ssPackage.Status == "UPLOADED" {
 			e.AddDetail("AIP already in the desired location")
 			if err := EndEvent(ctx, AIPStatusMoved, a, e, aip); err != nil {
 				return err
@@ -68,7 +68,7 @@ func move(ctx context.Context, logger *slog.Logger, a *App, storageClient *stora
 		if aip.Status == string(AIPStatusMoving) {
 			logger.Info("AIP last know Status: moving")
 		} else {
-			err = storageClient.Packages.Move(ctx, aip.UUID, a.Config.MoveLocationUUID)
+			err = storageClient.Packages.Move(ctx, aip.UUID, a.Locations.MoveTargetLocationID)
 			if err != nil {
 				if eventErr := EndEventErr(ctx, a, e, aip, "MOVE operation failed: "+err.Error()); eventErr != nil {
 					return eventErr
@@ -94,7 +94,7 @@ func move(ctx context.Context, logger *slog.Logger, a *App, storageClient *stora
 				if err := a.UpdateAIPStatus(ctx, aip.ID, AIPStatusMoving); err != nil {
 					return err
 				}
-			} else if ssPackage.Status == "UPLOADED" && strings.Contains(ssPackage.CurrentLocation, a.Config.MoveLocationUUID) {
+			} else if ssPackage.Status == "UPLOADED" && strings.Contains(ssPackage.CurrentLocation, a.Locations.MoveTargetLocationID) {
 				if err := a.UpdateAIP(ctx, aip.ID, &models.AipSetter{
 					CurrentLocation: omitnull.From(ssPackage.CurrentLocation),
 				}); err != nil {

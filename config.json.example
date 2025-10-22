@@ -31,66 +31,58 @@
   },
 
   // ===========================================================================
-  // ARCHIVEMATICA STORAGE SERVICE (SS) API
+  // ARCHIVEMATICA STORAGE SERVICE (SS) SETTINGS
   // ---------------------------------------------------------------------------
-  // Base connection settings for the Archivematica Storage Service API. These
-  // values are used whenever the application needs to query the Storage Service
-  // or invoke management commands (for example, to create replicas).
-  "ss_url": "http://localhost:62081",
-  // Username used to authenticate API requests to the Storage Service.
-  "ss_user_name": "test",
-  // API key or token used to authenticate to the Storage Service API.
-  "ss_api_key": "test",
+  // All Storage Service options live under storage_service. The "api" block
+  // configures HTTP access. The "management" block explains how to run the
+  // Storage Service management commands (either inside Docker or on the host).
+  // The "locations" block describes the Storage Service locations this tool
+  // should operate on.
+  "storage_service": {
+    "api": {
+      // Base URL of the Storage Service API.
+      "url": "http://localhost:62081",
+      // API credentials.
+      "username": "test",
+      "api_key": "test"
+    },
 
-  // ============================================================================
-  // LOCATION SETTINGS
-  // ---------------------------------------------------------------------------
-  // UUID of the source location that currently holds the AIPs to be moved or
-  // replicated. You can find location UUIDs in the Storage Service UI or by
-  // calling the SS API (for example: GET /locations/).
-  "location_uuid": "source-location-uuid",
+    "management": {
+      // Mode controls where management commands run: "docker" or "host".
+      "mode": "docker",
 
-  // Destination location UUID for move operations. When performing a move,
-  // AIPs will be transferred from `location_uuid` to `move_location_uuid`.
-  // This field is ignored for replication operations.
-  "move_location_uuid": "location-uuid",
+      "docker": {
+        // Name of the Storage Service container.
+        "container": "am-archivematica-storage-service-1",
+        // Path to manage.py inside the container.
+        "manage_path": "/src/src/archivematica/storage_service/manage.py"
+      },
 
-  // List of locations to which AIPs will be replicated. Each entry must have
-  // a `uuid` and a human-friendly `name`. Add multiple entries to replicate
-  // an AIP to several locations.
-  "replication_locations": [
-    {
-      "uuid": "replica-location-1",
-      "name": "Replica Location 1"
+      "host": {
+        // Python interpreter used when running commands on the host.
+        "python_path": "python3",
+        // Path to manage.py on the host file system. Leave empty when only
+        // running inside Docker.
+        "manage_path": "/src/src/archivematica/storage_service/manage.py",
+        // Additional environment variables for host executions.
+        "environment": {
+          "DJANGO_SETTINGS_MODULE": "archivematica.storage_service.storage_service.settings.local"
+        }
+      }
+    },
+
+    "locations": {
+      // Identifier of the source location that holds the AIPs to be processed.
+      "source_location_id": "source-location-uuid",
+      // Identifier for the move target location (optional for replication-only flows).
+      "move_target_location_id": "location-uuid",
+      // Replication targets, each with an ID and human-readable name.
+      "replication_targets": [
+        {
+          "id": "replica-location-1",
+          "name": "Replica Location 1"
+        }
+      ]
     }
-  ],
-
-  // ============================================================================
-  // REPLICATION EXECUTION MODE
-  // ---------------------------------------------------------------------------
-  // Whether `migrate` should run Storage Service management commands inside a
-  // Docker container or directly on the host. If `true`, the tool will use
-  // `docker exec` to run management commands inside the container named below.
-  // If `false`, commands will be executed on the host directly.
-  "docker": true,
-
-  // When `docker` is true, the name of the container that runs the Storage
-  // Service. The container must be running and `docker exec` must be allowed.
-  "ss_container_name": "am-archivematica-storage-service-1",
-
-  // The Python interpreter to. Examples: "python3" or a full path such as
-  // "/usr/bin/python3" or a virtualenv interpreter.
-  "python_path": "python3",
-
-  // Path to the Django 'manage.py' entrypoint for the Storage Service.
-  "ss_manage_path": "/src/src/archivematica/storage_service/manage.py",
-
-  // Environment variables that will be provided to the Storage Service process
-  // when management commands are executed. Customize these to match your
-  // Storage Service deployment. This is not needed when running commands inside
-  // Docker since the container already has the correct environment.
-  "environment": {
-    // For example, you may need to set the Django settings module.
-    "DJANGO_SETTINGS_MODULE": "archivematica.storage_service.storage_service.settings.local"
   }
 }

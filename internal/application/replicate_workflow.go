@@ -65,7 +65,7 @@ func (w *ReplicateWorkflow) Run(ctx workflow.Context, params ReplicateWorkflowPa
 		return result, nil
 	}
 
-	err = workflow.ExecuteActivity(ctx, CheckStorageServiceConnectionActivityName, w.App.Config).Get(ctx, nil)
+	err = workflow.ExecuteActivity(ctx, CheckStorageServiceConnectionActivityName, w.App.Locations).Get(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (w *ReplicateWorkflow) Run(ctx workflow.Context, params ReplicateWorkflowPa
 		var replicateResult ReplicateResult
 		replicateParams := ReplicateParams{
 			AipID:               params.UUID.String(),
-			LocationUUID:        w.App.Config.LocationUUID,
+			LocationUUID:        w.App.Locations.SourceLocationID,
 			ReplicaLocationUUID: repl,
 		}
 		err = workflow.ExecuteActivity(ctx, ReplicateAName, replicateParams).Get(ctx, &replicateResult)
@@ -135,10 +135,10 @@ func (a *App) InitAIPInDatabase(ctx context.Context, id uuid.UUID) (*InitAIPInDa
 		return nil, err
 	}
 	if aip.Status == string(AIPStatusNew) && len(aip.R.AipReplications) == 0 {
-		for _, l := range a.Config.ReplicationLocations {
+		for _, l := range a.Locations.ReplicationTargets {
 			replicationLocationSetter := models.AipReplicationSetter{
 				AipID:        omit.From(aip.ID),
-				LocationUUID: omitnull.From(l.UUID),
+				LocationUUID: omitnull.From(l.ID),
 				Status:       omit.From(string(AIPReplicationStatusNew)),
 			}
 			if err := aip.InsertAipReplications(ctx, a.DB, &replicationLocationSetter); err != nil {
@@ -198,37 +198,57 @@ func (a *App) ReplicateA(ctx context.Context, params ReplicateParams) (*Replicat
 	result.Details = append(result.Details, d1)
 
 	var cmd *exec.Cmd
-	if a.Config.Docker {
+	management := a.Config.StorageService.Management
+	switch management.Mode {
+	case "docker":
+		container := management.Docker.Container
+		if container == "" {
+			return nil, fmt.Errorf("storage_service.management.docker.container is required")
+		}
+		managePath := management.Docker.ManagePath
+		if managePath == "" {
+			return nil, fmt.Errorf("storage_service.management.docker.manage_path is required")
+		}
 		cmd = exec.Command(
 			"docker",
 			"exec",
-			a.Config.SSContainerName,
-			a.Config.SSManagePath,
+			container,
+			managePath,
 			"create_aip_replicas",
 			"--aip-uuid", aip.UUID,
 			"--aip-store-location", params.LocationUUID,
 			"--replicator-location", params.ReplicaLocationUUID,
 		)
-	} else {
+	case "host":
+		managePath := management.Host.ManagePath
+		if managePath == "" {
+			return nil, fmt.Errorf("storage_service.management.host.manage_path is required")
+		}
+		pythonPath := management.Host.PythonPath
+		if pythonPath == "" {
+			pythonPath = "python3"
+		}
 		cmd = exec.Command(
-			a.Config.PythonPath,
-			a.Config.SSManagePath,
+			pythonPath,
+			managePath,
 			"create_aip_replicas",
 			"--aip-uuid", aip.UUID,
 			"--aip-store-location", params.LocationUUID,
 			"--replicator-location", params.ReplicaLocationUUID,
 		)
 		cmd.Env = cmd.Environ()
-		if len(a.Config.Environment) > 0 {
-			keys := make([]string, 0, len(a.Config.Environment))
-			for key := range a.Config.Environment {
+		if len(management.Host.Environment) > 0 {
+			keys := make([]string, 0, len(management.Host.Environment))
+			for key := range management.Host.Environment {
 				keys = append(keys, key)
 			}
 			sort.Strings(keys)
 			for _, key := range keys {
-				cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, a.Config.Environment[key]))
+				cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, management.Host.Environment[key]))
 			}
 		}
+	default:
+		return nil, fmt.Errorf("unsupported storage service management mode %q", management.Mode)
 	}
 
 	q := models.AipReplications.Query(
@@ -403,10 +423,10 @@ func NewCheckStorageServiceConnectionActivity(storageClient *storage_service.API
 	return &CheckStorageServiceConnectionActivity{StorageClient: storageClient}
 }
 
-func (a *CheckStorageServiceConnectionActivity) Execute(ctx context.Context, config Config) error {
+func (a *CheckStorageServiceConnectionActivity) Execute(ctx context.Context, locations StorageServiceLocationConfig) error {
 	logger := activity.GetLogger(ctx)
-	for _, l := range config.ReplicationLocations {
-		loc, err := a.StorageClient.Location.Get(ctx, l.UUID)
+	for _, l := range locations.ReplicationTargets {
+		loc, err := a.StorageClient.Location.Get(ctx, l.ID)
 		if err != nil {
 			return fmt.Errorf("error connecting with the SS: %w", err)
 		}

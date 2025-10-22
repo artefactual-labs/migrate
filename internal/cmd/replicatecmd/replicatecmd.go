@@ -49,8 +49,8 @@ func (cfg *Config) Exec(ctx context.Context, _ []string) error {
 
 	logger := cfg.Logger()
 	logger.Info("Starting Replication")
-	for _, l := range app.Config.ReplicationLocations {
-		logger.Info(fmt.Sprintf("Location Name %s, UUID: %s", l.Name, l.UUID))
+	for _, l := range app.Locations.ReplicationTargets {
+		logger.Info(fmt.Sprintf("Location Name %s, ID: %s", l.Name, l.ID))
 	}
 
 	for _, id := range uuids {

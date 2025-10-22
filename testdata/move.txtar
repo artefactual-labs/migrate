@@ -20,8 +20,13 @@ cmp stdout ssmock-snapshot.toml
 2faa61dc-ed33-49f4-8b36-954f203bab4a
 -- config.json --
 {
-  "location_uuid": "72a9c518-2747-4cb5-aeba-e6309d946e79",
-  "move_location_uuid": "71cb2196-5629-4225-aaf7-d8431b0895c4"
+  "storage_service": {
+    "locations": {
+      "source_location_id": "72a9c518-2747-4cb5-aeba-e6309d946e79",
+      "move_target_location_id": "71cb2196-5629-4225-aaf7-d8431b0895c4",
+      "replication_targets": []
+    }
+  }
 }
 -- ssmock.toml --
 [[location]]

@@ -26,6 +26,9 @@ type App struct {
 
 	// A client to interact with the Storage Service API.
 	StorageClient *storage_service.API
+
+	// Storage Service location configuration.
+	Locations StorageServiceLocationConfig
 }
 
 func New(logger *slog.Logger, db bob.DB, cfg *Config, temporalClient client.Client, storageClient *storage_service.API) *App {
@@ -35,6 +38,7 @@ func New(logger *slog.Logger, db bob.DB, cfg *Config, temporalClient client.Clie
 		Config:        cfg,
 		Tc:            temporalClient,
 		StorageClient: storageClient,
+		Locations:     cfg.StorageService.Locations,
 	}
 }
 

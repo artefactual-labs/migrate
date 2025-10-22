@@ -9,7 +9,19 @@ stdout '.*\n1'
 -- input.txt --
 2faa61dc-ed33-49f4-8b36-954f203bab4a
 -- config.json --
-{}
+{
+  "storage_service": {
+    "locations": {
+      "source_location_id": "72a9c518-2747-4cb5-aeba-e6309d946e79",
+      "replication_targets": [
+        {
+          "id": "71cb2196-5629-4225-aaf7-d8431b0895c4",
+          "name": "Replica Location 1"
+        }
+      ]
+    }
+  }
+}
 -- ssmock.toml --
 [server]
 listen = "127.0.0.1:9000"

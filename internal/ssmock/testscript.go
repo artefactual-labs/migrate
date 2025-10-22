@@ -202,26 +202,48 @@ func updateStorageServiceConfig(ts *testscript.TestScript, baseURL string) error
 		return err
 	}
 
-	config["ss_url"] = baseURL
-	config["ss_user_name"] = "test-user"
-	config["ss_api_key"] = "test-key"
-	config["docker"] = false
+	storageService, _ := config["storage_service"].(map[string]any)
+	if storageService == nil {
+		storageService = make(map[string]any)
+	}
 
-	if _, ok := config["python_path"]; !ok {
-		config["python_path"] = "python3"
+	apiCfg, _ := storageService["api"].(map[string]any)
+	if apiCfg == nil {
+		apiCfg = make(map[string]any)
+	}
+	apiCfg["url"] = baseURL
+	apiCfg["username"] = "test-user"
+	apiCfg["api_key"] = "test-key"
+	storageService["api"] = apiCfg
+
+	managementCfg, _ := storageService["management"].(map[string]any)
+	if managementCfg == nil {
+		managementCfg = make(map[string]any)
+	}
+	managementCfg["mode"] = "host"
+
+	hostCfg, _ := managementCfg["host"].(map[string]any)
+	if hostCfg == nil {
+		hostCfg = make(map[string]any)
+	}
+	if _, ok := hostCfg["python_path"]; !ok {
+		hostCfg["python_path"] = "python3"
 	}
 	wd, _ := os.Getwd()
 	repoManage := filepath.Join(wd, "internal", "ssmock", "manage.py")
 	if _, statErr := os.Stat(repoManage); statErr == nil {
-		config["ss_manage_path"] = repoManage
+		hostCfg["manage_path"] = repoManage
 	}
 
-	envMap, _ := config["environment"].(map[string]any)
+	envMap, _ := hostCfg["environment"].(map[string]any)
 	if envMap == nil {
 		envMap = make(map[string]any)
 	}
 	envMap["SSMOCK_URL"] = baseURL
-	config["environment"] = envMap
+	hostCfg["environment"] = envMap
+	managementCfg["host"] = hostCfg
+	storageService["management"] = managementCfg
+	config["storage_service"] = storageService
 
 	dbConfig, _ := config["database"].(map[string]any)
 	if dbConfig == nil {
