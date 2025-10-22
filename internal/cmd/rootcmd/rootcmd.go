@@ -7,6 +7,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/peterbourgon/ff/v4"
@@ -91,7 +93,7 @@ func (cfg *RootConfig) initApp(ctx context.Context) (*application.App, error) {
 		return nil, err
 	}
 
-	db, err := initDatabase(ctx, "migrate.db")
+	db, err := initDatabase(ctx, config.Database.SQLite.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -112,6 +114,17 @@ func (cfg *RootConfig) initApp(ctx context.Context) (*application.App, error) {
 }
 
 func initDatabase(ctx context.Context, datasource string) (db bob.DB, err error) {
+	if datasource == "" {
+		return db, fmt.Errorf("sqlite path not configured")
+	}
+
+	dir := filepath.Dir(datasource)
+	if dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return db, fmt.Errorf("ensure sqlite directory %q: %w", dir, err)
+		}
+	}
+
 	db, err = bob.Open("sqlite", datasource)
 	if err != nil {
 		return db, fmt.Errorf("open sqlite db: %w", err)

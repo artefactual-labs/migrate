@@ -38,6 +38,18 @@ func LoadConfig() (*Config, error) {
 		cfg.Temporal.TaskQueue = "default"
 	}
 
+	if cfg.Database.Engine == "" {
+		cfg.Database.Engine = "sqlite"
+	}
+	switch cfg.Database.Engine {
+	case "sqlite":
+		if cfg.Database.SQLite.Path == "" {
+			cfg.Database.SQLite.Path = defaultSQLitePath()
+		}
+	default:
+		return nil, fmt.Errorf("unsupported database engine %q", cfg.Database.Engine)
+	}
+
 	return cfg, nil
 }
 
@@ -103,6 +115,9 @@ func findConfigPath() (string, error) {
 // Config represents the application configuration loaded from config.json.
 // Check out `config.json.example` for more details.
 type Config struct {
+	// Database configuration.
+	Database DatabaseConfig `json:"database"`
+
 	// Temporal workflow engine connection details.
 	Temporal TemporalConfig `json:"temporal"`
 
@@ -135,6 +150,25 @@ type Config struct {
 type Location struct {
 	UUID string `json:"uuid"`
 	Name string `json:"name"`
+}
+
+type DatabaseConfig struct {
+	Engine string       `json:"engine"`
+	SQLite SQLiteConfig `json:"sqlite"`
+}
+
+type SQLiteConfig struct {
+	Path string `json:"path"`
+}
+
+func defaultSQLitePath() string {
+	dir, err := os.UserConfigDir()
+	if err == nil && dir != "" {
+		if _, statErr := os.Stat(dir); statErr == nil {
+			return filepath.Join(dir, "migrate", "migrate.db")
+		}
+	}
+	return "migrate.db"
 }
 
 type TemporalConfig struct {

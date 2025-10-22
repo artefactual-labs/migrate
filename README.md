@@ -20,7 +20,7 @@ but running those operations at **scale** (tens of thousands of AIPs) is:
 - **Batch processing** from a simple UUID list (`input.txt`)
 - **Reliable orchestration** with [Temporal] so workflows survive crashes and
   restarts
-- **State tracking** in a local SQLite database (`migrate.db`)
+- **State tracking** in a local SQLite database
 - **Parallel execution** across multiple workers
 - **CSV reports** (`move-report.csv`, `replication-report.csv`) for QA,
   auditing, and compliance
@@ -73,7 +73,7 @@ flowchart TD
     D -->|Move/Replicate| E1[Storage Location A]
     D -->|Move/Replicate| E2[Storage Location B]
     D -->|Move/Replicate| E3[Storage Location C]
-    C --> F[(SQLite DB: migrate.db)]
+    C --> F[(SQLite DB: configurable path)]
     F --> G[CSV Reports]
 ```
 

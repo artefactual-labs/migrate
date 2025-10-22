@@ -1,4 +1,20 @@
 {
+  // ============================================================================
+  // DATABASE SETTINGS
+  // ---------------------------------------------------------------------------
+  // Configure how migrate persists its state. When omitted, migrate uses an
+  // SQLite database located at $XDG_CONFIG_HOME/migrate/migrate.db (or the
+  // matching platform-specific config directory).
+  "database": {
+    // Only "sqlite" is supported at the moment. Leave blank to use the default.
+    "engine": "sqlite",
+    "sqlite": {
+      // Optional path to the SQLite database file. When empty, migrate falls
+      // back to $XDG_CONFIG_HOME/migrate/migrate.db.
+      "path": ""
+    }
+  },
+
   // ===========================================================================
   // TEMPORAL (workflow engine) configuration
   // ---------------------------------------------------------------------------

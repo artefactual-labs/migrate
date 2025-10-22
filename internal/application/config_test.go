@@ -35,4 +35,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, cfg.Environment["DJANGO_SETTINGS_MODULE"], "archivematica.storage_service.storage_service.settings.local")
 	assert.Equal(t, cfg.Temporal.Address, "127.0.0.1:7233")
 	assert.Equal(t, cfg.Temporal.TaskQueue, "default-task-queue")
+	assert.Equal(t, cfg.Database.Engine, "sqlite")
+	assert.Equal(t, cfg.Database.SQLite.Path, defaultSQLitePath())
 }

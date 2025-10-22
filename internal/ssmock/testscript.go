@@ -223,6 +223,21 @@ func updateStorageServiceConfig(ts *testscript.TestScript, baseURL string) error
 	envMap["SSMOCK_URL"] = baseURL
 	config["environment"] = envMap
 
+	dbConfig, _ := config["database"].(map[string]any)
+	if dbConfig == nil {
+		dbConfig = make(map[string]any)
+	}
+	if _, ok := dbConfig["engine"]; !ok {
+		dbConfig["engine"] = "sqlite"
+	}
+	sqliteConfig, _ := dbConfig["sqlite"].(map[string]any)
+	if sqliteConfig == nil {
+		sqliteConfig = make(map[string]any)
+	}
+	sqliteConfig["path"] = ts.MkAbs("migrate.db")
+	dbConfig["sqlite"] = sqliteConfig
+	config["database"] = dbConfig
+
 	updatedData, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return err
