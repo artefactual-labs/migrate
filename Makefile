@@ -28,6 +28,11 @@ deadcode: tool-deadcode
 	  exit 1; \
 	fi
 
+deps: # @HELP List oudated dependencies.
+deps: ARGS ?= -update -direct
+deps: tool-go-mod-outdated
+	go list -u -m -json all | go-mod-outdated $(ARGS)
+
 fmt: # @HELP Format the project Go files with golangci-lint.
 fmt: FMT_FLAGS ?=
 fmt: tool-golangci-lint
