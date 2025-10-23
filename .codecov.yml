@@ -1,0 +1,20 @@
+# Validate this file:
+#   curl --data-binary @codecov.yml https://codecov.io/validate
+
+comment: off
+
+coverage:
+  precision: 2
+  round: down
+  range: "25...75"
+  status:
+    project:
+      default:
+        threshold: 1.0%
+    patch:
+      default:
+        threshold: 1.0%
+
+ignore:
+- "internal/**/gen/"
+- "internal/database/migrations/"

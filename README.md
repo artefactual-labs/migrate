@@ -1,3 +1,12 @@
+<p align="left">
+  <a href="LICENSE">
+    <img alt="Apache License 2.0" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg"/>
+  </a>
+  <a href="https://codecov.io/gh/artefactual-labs/migrate">
+    <img alt="Migrate project" src="https://img.shields.io/codecov/c/github/artefactual-labs/migrate"/>
+  </a>
+</p>
+
 # Migrate
 
 **Migrate** is a command-line tool for orchestrating large-scale **Archivematica
