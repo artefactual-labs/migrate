@@ -16,6 +16,12 @@ endif
 # Configure bine.
 export PATH := $(shell go tool bine path):$(PATH)
 
+IGNORED_PACKAGES := \
+	github.com/artefactual-labs/migrate/internal/database/gen/% \
+	github.com/artefactual-labs/migrate/internal/database/migrations
+PACKAGES = $(shell go list ./...)
+TEST_PACKAGES = $(filter-out $(IGNORED_PACKAGES),$(PACKAGES))
+
 build: # @HELP Build migrate.
 	env CGO_ENABLED=0 go build -trimpath -o $(CURDIR)/migrate ./cmd/migrate
 
@@ -55,6 +61,17 @@ lint: # @HELP Lint the project Go files with golangci-lint (linters + formatters
 lint: LINT_FLAGS ?= --fix=1
 lint: tool-golangci-lint
 	golangci-lint run $(LINT_FLAGS)
+
+test: # @HELP Run all tests and output a summary using gotestsum.
+test: TFORMAT ?= short
+test: GOTEST_FLAGS ?=
+test: COMBINED_FLAGS ?= $(GOTEST_FLAGS) $(TEST_PACKAGES)
+test: tool-gotestsum
+	gotestsum --format=$(TFORMAT) -- $(COMBINED_FLAGS)
+
+test-ci: # @HELP Run all tests in CI with coverage and the race detector.
+test-ci:
+	$(MAKE) test GOTEST_FLAGS="-race -coverprofile=covreport -covermode=atomic"
 
 tool-%:
 	@go tool bine get $* 1> /dev/null

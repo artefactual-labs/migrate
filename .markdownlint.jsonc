@@ -1,6 +1,12 @@
 {
   "default": true,
-  
+
+  // Allow inline HTML elements. 
+  "MD033": false,
+
+  // Allow fist line to be an HTML element.
+  "MD041": false,
+
   // Allow indented code blocks.
   "MD046": false
 }
