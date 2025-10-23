@@ -174,6 +174,9 @@ type Config struct {
 
 	// Storage Service configuration.
 	StorageService StorageServiceConfig `json:"storage_service"`
+
+	// Workflow-level configuration toggles.
+	Workflows WorkflowConfig `json:"workflows"`
 }
 
 type TemporalConfig struct {
@@ -243,6 +246,16 @@ type StorageServiceLocationConfig struct {
 type ReplicationTarget struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+// WorkflowConfig holds configuration for individual workflows.
+type WorkflowConfig struct {
+	Move WorkflowMoveConfig `json:"move"`
+}
+
+// WorkflowMoveConfig controls behaviour specific to the move workflow.
+type WorkflowMoveConfig struct {
+	CheckFixity bool `json:"check_fixity"`
 }
 
 type DatabaseConfig struct {

@@ -84,5 +84,16 @@
         }
       ]
     }
+  },
+
+  // ===========================================================================
+  // WORKFLOW BEHAVIOUR
+  // ---------------------------------------------------------------------------
+  // Toggle additional workflow steps. When unset, all options default to false.
+  "workflows": {
+    "move": {
+      // Run a fixity check via the Storage Service before moving an AIP.
+      "check_fixity": false
+    }
   }
 }

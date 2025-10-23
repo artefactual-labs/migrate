@@ -215,6 +215,19 @@ func (s *Server) handleFile(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if strings.HasSuffix(remainder, "/check_fixity/") {
+		if r.Method != http.MethodGet {
+			methodNotAllowed(w, http.MethodGet)
+			return
+		}
+		id := strings.TrimSuffix(remainder, "/check_fixity/")
+		if id == "" {
+			http.NotFound(w, r)
+			return
+		}
+		s.handleCheckFixity(w, r, id)
+		return
+	}
 	if strings.HasSuffix(remainder, "/move/") {
 		if r.Method != http.MethodPost {
 			methodNotAllowed(w, http.MethodPost)
@@ -246,6 +259,23 @@ func (s *Server) handleFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, pkg)
+}
+
+func (s *Server) handleCheckFixity(w http.ResponseWriter, r *http.Request, id string) {
+	s.mu.RLock()
+	pkg, ok := s.state.clonePackage(id)
+	s.mu.RUnlock()
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	resp := storage_service.FixityResponse{
+		Success:   true,
+		Message:   fmt.Sprintf("Fixity check completed for %s", pkg.UUID),
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	}
+	writeJSON(w, &resp)
 }
 
 func (s *Server) handleMove(w http.ResponseWriter, r *http.Request, id string) {

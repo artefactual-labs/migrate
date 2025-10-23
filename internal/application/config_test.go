@@ -55,4 +55,6 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Database.Engine, "sqlite")
 	assert.Equal(t, cfg.Database.SQLite.Path, DefaultSQLitePath())
+
+	assert.Assert(t, !cfg.Workflows.Move.CheckFixity)
 }

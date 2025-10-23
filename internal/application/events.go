@@ -21,6 +21,7 @@ func (a Action) String() string {
 
 var (
 	ActionFind      = Action{"find"}
+	ActionFixity    = Action{"fixity"}
 	ActionMove      = Action{"move"}
 	ActionReplicate = Action{"Replicate"}
 	ActionIndex     = Action{"index"}
@@ -57,6 +58,7 @@ func StartEvent(a Action) Event {
 	}
 }
 
+// EndEvent marks the AIP with the provided status and stores the event.
 func EndEvent(ctx context.Context, s AIPStatus, a *App, e Event, aip *models.Aip) error {
 	e.End = time.Now()
 	if err := a.UpdateAIPStatus(ctx, aip.ID, s); err != nil {
@@ -69,6 +71,7 @@ func EndEvent(ctx context.Context, s AIPStatus, a *App, e Event, aip *models.Aip
 	return aip.InsertEvents(ctx, a.DB, setter)
 }
 
+// EndEventNoChange stores the event without changing the AIP status.
 func EndEventNoChange(ctx context.Context, a *App, e Event, aip *models.Aip) error {
 	if err := aip.Reload(ctx, a.DB); err != nil {
 		return err
@@ -76,12 +79,24 @@ func EndEventNoChange(ctx context.Context, a *App, e Event, aip *models.Aip) err
 	return EndEvent(ctx, AIPStatus(aip.Status), a, e, aip)
 }
 
+// EndEventErr records the error, marks the AIP as failed, and stores the event.
 func EndEventErr(ctx context.Context, a *App, e Event, aip *models.Aip, eventErr string) error {
 	e.End = time.Now()
 	a.AddAIPError(ctx, aip, eventErr)
 	if err := a.UpdateAIPStatus(ctx, aip.ID, AIPStatusFailed); err != nil {
 		return err
 	}
+	setter, err := EventToSetter(e)
+	if err != nil {
+		return err
+	}
+	return aip.InsertEvents(ctx, a.DB, setter)
+}
+
+// EndEventErrNoFailure records the error and stores the event without changing the AIP status.
+func EndEventErrNoFailure(ctx context.Context, a *App, e Event, aip *models.Aip, eventErr string) error {
+	e.End = time.Now()
+	a.AddAIPError(ctx, aip, eventErr)
 	setter, err := EventToSetter(e)
 	if err != nil {
 		return err

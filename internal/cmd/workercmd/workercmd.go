@@ -78,6 +78,7 @@ func registerWorker(app *application.App) worker.Worker {
 	w.RegisterActivityWithOptions(app.ReplicateA, activity.RegisterOptions{Name: application.ReplicateAName})
 	w.RegisterActivityWithOptions(app.FindA, activity.RegisterOptions{Name: application.FindAName})
 	w.RegisterActivityWithOptions(app.CheckReplicationStatus, activity.RegisterOptions{Name: application.CheckReplicationStatusName})
+	w.RegisterActivityWithOptions(app.FixityA, activity.RegisterOptions{Name: application.FixityActivityName})
 	w.RegisterActivityWithOptions(app.MoveA, activity.RegisterOptions{Name: application.MoveActivityName})
 
 	return w

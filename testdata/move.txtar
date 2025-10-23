@@ -26,6 +26,11 @@ cmp stdout ssmock-snapshot.toml
       "move_target_location_id": "71cb2196-5629-4225-aaf7-d8431b0895c4",
       "replication_targets": []
     }
+  },
+  "workflows": {
+    "move": {
+      "check_fixity": true
+    }
   }
 }
 -- ssmock.toml --
@@ -47,7 +52,7 @@ id = '2faa61dc-ed33-49f4-8b36-954f203bab4a'
 status = 'UPLOADED'
 -- move-report.expected.csv --
 UUID,AIPStatus,Duration,fixity-run,moved,cleaned,replicated,re-indexed,size,Duration Nanoseconds,New Path,Old Path,Replica UUID,Local copy Path,Staged Copy Path,Errors
-2faa61dc-ed33-49f4-8b36-954f203bab4a,moved,Not Done,Done,Not Done,Not Done,Not Done,0 B,
+2faa61dc-ed33-49f4-8b36-954f203bab4a,moved,Done,Done,Not Done,Not Done,Not Done,0 B,
 -- db.aips.expected.csv --
 id,uuid,status,found,fixity_run,moved,cleaned,replicated,re_indexed,current_location,size,location_uuid
-1,2faa61dc-ed33-49f4-8b36-954f203bab4a,moved,1,0,1,0,0,0,/api/v2/location/71cb2196-5629-4225-aaf7-d8431b0895c4/|/api/v2/location/72a9c518-2747-4cb5-aeba-e6309d946e79/,0,
+1,2faa61dc-ed33-49f4-8b36-954f203bab4a,moved,1,1,1,0,0,0,/api/v2/location/71cb2196-5629-4225-aaf7-d8431b0895c4/|/api/v2/location/72a9c518-2747-4cb5-aeba-e6309d946e79/,0,

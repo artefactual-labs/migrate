@@ -65,6 +65,16 @@ func (w *MoveWorkflow) Run(ctx workflow.Context, params MoveWorkflowParams) (*Mo
 		return result, nil
 	}
 
+	if w.App.Config.Workflows.Move.CheckFixity {
+		fixityParams := FixityActivityParams{UUID: params.UUID.String()}
+		fixityResult := FixityActivityResult{}
+		err = workflow.ExecuteActivity(ctx, FixityActivityName, fixityParams).Get(ctx, &fixityResult)
+		if err != nil {
+			return nil, err
+		}
+		result.MoveDetails = append(result.MoveDetails, "Fixity status: "+fixityResult.Status)
+	}
+
 	moveParams := MoveActivityParams{UUID: params.UUID.String()}
 	moveResult := MoveActivityResult{}
 	err = workflow.ExecuteActivity(ctx, MoveActivityName, moveParams).Get(ctx, &moveResult)
