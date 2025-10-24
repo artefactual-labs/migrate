@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/peterbourgon/ff/v4"
 	"go.temporal.io/api/enums/v1"
+	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 
 	"github.com/artefactual-labs/migrate/internal/application"
@@ -55,10 +57,13 @@ func (cfg *Config) Exec(ctx context.Context, _ []string) error {
 
 	for _, id := range uuids {
 		workflowID := fmt.Sprintf("AIP_Replicate_%s", id.String())
+		// Allow duplicate execution only when the previous run closed unsuccessfully.
+		// This keeps restarts simple while still preventing two healthy runs from
+		// processing the same AIP at the same time.
 		options := client.StartWorkflowOptions{
 			ID:                    workflowID,
 			TaskQueue:             app.Config.Temporal.TaskQueue,
-			WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_ALLOW_DUPLICATE,
+			WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_ALLOW_DUPLICATE_FAILED_ONLY,
 		}
 		params := application.ReplicateWorkflowParams{
 			UUID: id,
@@ -74,18 +79,35 @@ func (cfg *Config) Exec(ctx context.Context, _ []string) error {
 			continue
 		}
 
-		we, err := app.Tc.ExecuteWorkflow(ctx, options, application.ReplicateWorkflowName, params)
-		if err != nil {
-			logger.Error("workflow launch failed", "err", err)
+		var we client.WorkflowRun
+		for {
+			we, err = app.Tc.ExecuteWorkflow(ctx, options, application.ReplicateWorkflowName, params)
+			if err != nil {
+				var alreadyStarted *serviceerror.WorkflowExecutionAlreadyStarted
+				if errors.As(err, &alreadyStarted) {
+					logger.Info("Workflow already running, retrying shortly.", "workflow_id", workflowID)
+					select {
+					case <-ctx.Done():
+						return ctx.Err()
+					case <-time.After(10 * time.Second):
+					}
+					continue
+				}
+				logger.Error("Workflow launch failed.", "err", err)
+				break
+			}
+			break
+		}
+		if we == nil {
 			continue
 		}
 		var result application.ReplicateWorkflowResult
 		err = we.Get(ctx, &result)
 		if err != nil {
-			logger.Error("workflow execution failed", "error", err)
+			logger.Error("Workflow execution failed.", "error", err)
 			continue
 		}
-		logger.Info("workflow", "ID", we.GetID())
+		logger.Info("Workflow completed successfully.", "id", we.GetID())
 	}
 
 	return nil
