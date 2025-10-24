@@ -180,9 +180,12 @@ type Config struct {
 }
 
 type TemporalConfig struct {
-	Namespace string `json:"namespace"`
-	Address   string `json:"address"`
-	TaskQueue string `json:"task_queue"`
+	Namespace                               string `json:"namespace"`
+	Address                                 string `json:"address"`
+	TaskQueue                               string `json:"task_queue"`
+	MaxConcurrentActivityExecutionSize      int    `json:"max_concurrent_activity_execution_size"`
+	MaxConcurrentLocalActivityExecutionSize int    `json:"max_concurrent_local_activity_execution_size"`
+	MaxConcurrentWorkflowTaskExecutionSize  int    `json:"max_concurrent_workflow_task_execution_size"`
 }
 
 type StorageServiceConfig struct {

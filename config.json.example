@@ -27,7 +27,18 @@
     // Host and port where the Temporal frontend is reachable (host:port).
     "address": "127.0.0.1:7233",
     // Task queue that workers poll for workflows and activity tasks.
-    "task_queue": "default-task-queue"
+    "task_queue": "default-task-queue",
+
+    // Worker concurrency settings - with move/replicate running one AIP at a
+    // time, the load is tiny, so most deployments can leave these at their
+    // defaults.
+    //
+    // The maximum concurrent activity executions this worker can have.
+    "max_concurrent_activity_execution_size": 1000,
+    // The maximum concurrent local activity executions this worker can have.
+    "max_concurrent_local_activity_execution_size": 1000,
+    // The maximum concurrent workflow task executions this worker can have.
+    "max_concurrent_workflow_task_execution_size": 1000,
   },
 
   // ===========================================================================
