@@ -86,6 +86,23 @@ flowchart TD
     F --> G[CSV Reports]
 ```
 
+## Concurrency model
+
+When you run `migrate move` or `migrate replicate`, the CLI reads `input.txt`,
+starts a Temporal workflow for the first UUID, and waits until that workflow
+finishes before it touches the next line. AIPs are handled strictly one after
+another: even though Temporal can queue lots of work, the client makes the job
+serial by blocking on each result.
+
+Temporal gives us durability and resumability, but we reintroduce a bottleneck
+by tying workflow submission to a blocking CLI loop. We can explore future
+iterations that decouple submission from the CLI process so that Temporal can
+exploit higher parallelism while we retain the same operational guarantees.
+
+If you stop the CLI and run it again, it will reread `input.txt` and inspect the
+local database for each UUID. Entries whose status is already `moved` or
+`not-found` are skipped, so completed work is not repeated.
+
 ## Prerequisites
 
 - Access to an **Archivematica Storage Service** instance with valid API
