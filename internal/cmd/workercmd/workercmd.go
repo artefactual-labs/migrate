@@ -55,7 +55,12 @@ func (cfg *Config) Exec(ctx context.Context, _ []string) error {
 }
 
 func registerWorker(app *application.App) worker.Worker {
-	w := worker.New(app.Tc, app.Config.Temporal.TaskQueue, worker.Options{})
+	w := worker.New(app.Tc, app.Config.Temporal.TaskQueue, worker.Options{
+		MaxConcurrentActivityExecutionSize:      app.Config.Temporal.MaxConcurrentActivityExecutionSize,
+		MaxConcurrentLocalActivityExecutionSize: app.Config.Temporal.MaxConcurrentLocalActivityExecutionSize,
+		MaxConcurrentWorkflowTaskExecutionSize:  app.Config.Temporal.MaxConcurrentWorkflowTaskExecutionSize,
+	})
+
 	w.RegisterWorkflowWithOptions(
 		application.NewReplicateWorkflow(app).Run,
 		workflow.RegisterOptions{
