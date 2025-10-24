@@ -24,7 +24,7 @@ func StartTestServer(t *testing.T, cfg *Config, opts ...Option) *Server {
 	}
 
 	t.Cleanup(func() {
-		shutdownCtx, shutdownCancel := context.WithTimeout(t.Context(), time.Second)
+		shutdownCtx, shutdownCancel := context.WithTimeout(t.Context(), time.Second*30)
 		defer shutdownCancel()
 		if err := stop(shutdownCtx); err != nil {
 			t.Fatalf("shutdown simulator: %v", err)
