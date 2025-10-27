@@ -48,4 +48,3 @@ jobs:
           format: table
           severity: MEDIUM,HIGH,CRITICAL
           exit-code: 1
-          args: --no-progress
