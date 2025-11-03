@@ -12,10 +12,10 @@ require (
 	github.com/rogpeppe/go-internal v1.14.1
 	github.com/stephenafamo/bob v0.41.1
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a
-	go.temporal.io/api v1.55.0
+	go.temporal.io/api v1.57.0
 	go.temporal.io/sdk v1.37.0
 	gotest.tools/v3 v3.5.2
-	modernc.org/sqlite v1.39.1
+	modernc.org/sqlite v1.40.0
 )
 
 require (
