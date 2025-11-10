@@ -2,6 +2,11 @@ name: Tests
 
 on:
   workflow_call:
+    inputs:
+      target_sha:
+        description: Commit SHA to inspect for Codecov skip markers.
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -82,12 +87,16 @@ jobs:
       - name: Determine skip-codecov
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         id: skip-codecov
+        env:
+          TARGET_SHA: ${{ inputs.target_sha || github.sha }}
         with:
           script: |
-            // Sets `ref` to the SHA of the current pull request's head commit,
-            // or, if not present, to the SHA of the commit that triggered the
-            // event.
-            const ref = '${{ github.event.pull_request.head.sha || github.event.after }}';
+            // Prefer caller-provided SHA (PR head), otherwise fall back to the
+            // workflow run's commit SHA.
+            const ref = process.env.TARGET_SHA || context.payload?.pull_request?.head?.sha || context.sha;
+            if (!ref) {
+              throw new Error("Unable to determine commit SHA for Codecov skip check.");
+            }
             const { repo, owner } = context.repo;
             const { data: commit } = await github.rest.repos.getCommit({ owner, repo, ref });
             const commitMessage = commit.commit.message;

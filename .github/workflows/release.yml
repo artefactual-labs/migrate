@@ -30,6 +30,8 @@ jobs:
 
   tests:
     uses: ./.github/workflows/tests.yml
+    with:
+      target_sha: ${{ github.sha }}
 
   release:
     name: Release

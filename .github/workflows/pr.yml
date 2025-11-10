@@ -13,3 +13,5 @@ concurrency:
 jobs:
   tests:
     uses: ./.github/workflows/tests.yml
+    with:
+      target_sha: ${{ github.event.pull_request.head.sha }}
