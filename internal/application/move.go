@@ -77,11 +77,18 @@ func move(ctx context.Context, logger *slog.Logger, a *App, storageClient *stora
 			}
 		}
 
-		moving := true
-		b := backoff.NewExponentialBackOff(
+		// We use backoff to control the wait time between polling attempts
+		// (starting at ~500ms, growing by 1.5× each time, capping at 10 mins)
+		// for up to an overall maximum of 24 hours, until either:
+		// - The move completes successfully, or
+		// - The backoff is exhausted (24h total), or
+		// - An error occurs.
+		backoffStrategy := backoff.NewExponentialBackOff(
 			backoff.WithMaxElapsedTime(24*time.Hour),
-			backoff.WithMaxInterval(2*time.Minute),
+			backoff.WithMaxInterval(10*time.Minute),
 		)
+
+		moving := true
 		for moving {
 			ssPackage, err = storageClient.Packages.GetByID(ctx, aip.UUID)
 			if err != nil {
@@ -103,7 +110,6 @@ func move(ctx context.Context, logger *slog.Logger, a *App, storageClient *stora
 				if err := EndEvent(ctx, AIPStatusMoved, a, e, aip); err != nil {
 					return err
 				}
-				b.Reset()
 				moving = false
 				continue
 			} else {
@@ -113,9 +119,20 @@ func move(ctx context.Context, logger *slog.Logger, a *App, storageClient *stora
 				}
 				return err
 			}
-			timeBackOff := b.NextBackOff()
-			logger.Info("Will check again in: " + timeBackOff.String())
-			time.Sleep(timeBackOff)
+
+			// Wait for the next backoff interval before polling again.
+			if timeBackOff := backoffStrategy.NextBackOff(); timeBackOff == backoff.Stop {
+				err := errors.New("move polling backoff exhausted")
+				logger.Warn("Backoff exhausted, aborting move polling.", slog.String("aip", aip.UUID))
+				if eventErr := EndEventErr(ctx, a, e, aip, err.Error()); eventErr != nil {
+					return eventErr
+				}
+				return err
+			} else {
+				// Note: this is not too noisy (~160 entries over 24h).
+				logger.Warn("Will check again in: " + timeBackOff.String())
+				time.Sleep(timeBackOff)
+			}
 		}
 	}
 	return nil
