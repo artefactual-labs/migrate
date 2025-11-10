@@ -66,11 +66,11 @@ test: # @HELP Run all tests and output a summary using gotestsum.
 test: TFORMAT ?= short
 test: GOTEST_FLAGS ?=
 test: COMBINED_FLAGS ?= $(GOTEST_FLAGS) $(TEST_PACKAGES)
-test: tool-gotestsum
+test: tool-gotestsum tool-temporal
 	gotestsum --format=$(TFORMAT) -- $(COMBINED_FLAGS)
 
 test-ci: # @HELP Run all tests in CI with coverage and the race detector.
-test-ci:
+test-ci: tool-temporal
 	$(MAKE) test GOTEST_FLAGS="-race -coverprofile=covreport -covermode=atomic"
 
 tool-%:
