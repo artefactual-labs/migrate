@@ -6,16 +6,16 @@ require (
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/uuid v1.6.0
-	github.com/jaswdr/faker/v2 v2.8.1
+	github.com/jaswdr/faker/v2 v2.9.0
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/peterbourgon/ff/v4 v4.0.0-beta.1
 	github.com/rogpeppe/go-internal v1.14.1
 	github.com/stephenafamo/bob v0.41.1
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a
-	go.temporal.io/api v1.55.0
-	go.temporal.io/sdk v1.37.0
+	go.temporal.io/api v1.58.0
+	go.temporal.io/sdk v1.38.0
 	gotest.tools/v3 v3.5.2
-	modernc.org/sqlite v1.39.1
+	modernc.org/sqlite v1.40.1
 )
 
 require (
@@ -49,7 +49,7 @@ require (
 	github.com/mikelolasagasti/xz v1.0.1 // indirect
 	github.com/minio/minlz v1.0.0 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
-	github.com/nexus-rpc/sdk-go v0.3.0 // indirect
+	github.com/nexus-rpc/sdk-go v0.5.1 // indirect
 	github.com/nwaples/rardecode/v2 v2.2.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
