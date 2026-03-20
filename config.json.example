@@ -97,6 +97,11 @@
     }
   },
 
+  "elastic": {
+	  "host": "http://localhost:62002,
+	  "version": "v6"
+	},
+
   // ===========================================================================
   // WORKFLOW BEHAVIOUR
   // ---------------------------------------------------------------------------
@@ -105,6 +110,8 @@
     "move": {
       // Run a fixity check via the Storage Service before moving an AIP.
       "check_fixity": false
+      // Run the workflow, but only update the Index with the location name.
+			"only_index_update": false
     }
   }
 }

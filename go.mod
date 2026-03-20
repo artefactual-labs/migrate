@@ -5,6 +5,7 @@ go 1.25.1
 require (
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/elastic/go-elasticsearch/v6 v6.8.10
 	github.com/google/uuid v1.6.0
 	github.com/jaswdr/faker/v2 v2.8.1
 	github.com/pelletier/go-toml/v2 v2.2.4
