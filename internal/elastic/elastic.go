@@ -91,6 +91,7 @@ func NewV6(host string) (ElasticClient, error) {
 }
 
 func unmarshal(r io.ReadCloser, v any) error {
+	//nolint:errcheck
 	defer r.Close()
 	body, err := io.ReadAll(r)
 	if err != nil {
