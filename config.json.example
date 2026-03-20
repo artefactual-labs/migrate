@@ -98,7 +98,7 @@
   },
 
   "elastic": {
-	  "host": "http://localhost:62002,
+	  "host": "http://localhost:62002",
 	  "version": "v6"
 	},
 
