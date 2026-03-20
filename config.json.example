@@ -109,7 +109,7 @@
   "workflows": {
     "move": {
       // Run a fixity check via the Storage Service before moving an AIP.
-      "check_fixity": false
+      "check_fixity": false,
       // Run the workflow, but only update the Index with the location name.
 			"only_index_update": false
     }
