@@ -22,6 +22,13 @@ type UpdateIndexActivityResult struct {
 
 // UpdateIndexA Calls the elastic search API and update the index field: location with the provided name.
 func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams) (*UpdateIndexActivityResult, error) {
+	if a.Config.Elastic.Host == "" {
+		result := &UpdateIndexActivityResult{
+			Message: "Elastic not configured, skipping index update",
+		}
+		return result, nil
+	}
+
 	var err error
 	locationID := a.Config.StorageService.Locations.MoveTargetLocationID
 	location, err := a.StorageClient.Location.Get(ctx, locationID)
@@ -60,6 +67,6 @@ func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams
 	}
 	result.ElasticUpdateResult = response
 
-	result.Message = "activity complete"
+	result.Message = "index update complete"
 	return result, nil
 }
