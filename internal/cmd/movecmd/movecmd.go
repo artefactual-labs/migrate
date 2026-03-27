@@ -69,7 +69,6 @@ func (cfg *Config) Exec(ctx context.Context, _ []string) error {
 			return fmt.Errorf("get AIP by ID: %w", err)
 		} else if aip != nil && aip.Status == string(application.AIPStatusMoved) {
 			logger.Info("AIP Already Moved")
-			continue
 		} else if aip != nil && aip.Status == string(application.AIPStatusNotFound) {
 			logger.Info("AIP Not Found")
 			continue

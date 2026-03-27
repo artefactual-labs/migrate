@@ -1,39 +1,39 @@
 {
-  "project": "migrate",
-  "bins": [
-    {
-      "name": "golangci-lint",
-      "url": "https://github.com/golangci/golangci-lint",
-      "version": "2.5.0",
-      "asset_pattern": "{name}-{version}-{goos}-{goarch}.tar.gz"
-    },
-    {
-      "name": "bobgen-sqlite",
-      "go_package": "github.com/stephenafamo/bob/gen/bobgen-sqlite",
-      "version": "0.41.1"
-    },
-    {
-      "name": "deadcode",
-      "go_package": "golang.org/x/tools/cmd/deadcode",
-      "version": "0.38.0"
-    },
-    {
-      "name": "temporal",
-      "url": "https://github.com/temporalio/cli",
-      "version": "1.5.0",
-      "asset_pattern": "temporal_cli_{version}_{goos}_{goarch}.tar.gz"
-    },
-    {
-      "name": "go-mod-outdated",
-      "url": "https://github.com/psampaz/go-mod-outdated",
-      "version": "0.9.0",
-      "asset_pattern": "{name}_{version}_{os}_{arch}.tar.gz"
-    },
-    {
-      "name": "gotestsum",
-      "url": "https://github.com/gotestyourself/gotestsum",
-      "version": "1.13.0",
-      "asset_pattern": "{name}_{version}_{goos}_{goarch}.tar.gz"
-    }
-  ]
+	"project": "migrate",
+	"bins": [
+		{
+			"name": "golangci-lint",
+			"url": "https://github.com/golangci/golangci-lint",
+			"version": "2.11.3",
+			"asset_pattern": "{name}-{version}-{goos}-{goarch}.tar.gz"
+		},
+		{
+			"name": "bobgen-sqlite",
+			"go_package": "github.com/stephenafamo/bob/gen/bobgen-sqlite",
+			"version": "0.41.1"
+		},
+		{
+			"name": "deadcode",
+			"go_package": "golang.org/x/tools/cmd/deadcode",
+			"version": "0.38.0"
+		},
+		{
+			"name": "temporal",
+			"url": "https://github.com/temporalio/cli",
+			"version": "1.5.0",
+			"asset_pattern": "temporal_cli_{version}_{goos}_{goarch}.tar.gz"
+		},
+		{
+			"name": "go-mod-outdated",
+			"url": "https://github.com/psampaz/go-mod-outdated",
+			"version": "0.9.0",
+			"asset_pattern": "{name}_{version}_{os}_{arch}.tar.gz"
+		},
+		{
+			"name": "gotestsum",
+			"url": "https://github.com/gotestyourself/gotestsum",
+			"version": "1.13.0",
+			"asset_pattern": "{name}_{version}_{goos}_{goarch}.tar.gz"
+		}
+	]
 }

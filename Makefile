@@ -23,7 +23,7 @@ PACKAGES = $(shell go list ./...)
 TEST_PACKAGES = $(filter-out $(IGNORED_PACKAGES),$(PACKAGES))
 
 build: # @HELP Build migrate.
-	env CGO_ENABLED=0 go build -trimpath -o $(CURDIR)/migrate ./cmd/migrate
+	env CGO_ENABLED=0 go build -trimpath -o $(CURDIR)/migrate .
 
 deadcode: # @HELP Find unreachable functions.
 deadcode: tool-deadcode

@@ -177,6 +177,8 @@ type Config struct {
 
 	// Workflow-level configuration toggles.
 	Workflows WorkflowConfig `json:"workflows"`
+
+	Elastic ElasticConfig `json:"elastic"`
 }
 
 type TemporalConfig struct {
@@ -192,6 +194,11 @@ type StorageServiceConfig struct {
 	API        StorageServiceAPIConfig        `json:"api"`
 	Management StorageServiceManagementConfig `json:"management"`
 	Locations  StorageServiceLocationConfig   `json:"locations"`
+}
+
+type ElasticConfig struct {
+	Host    string `json:"host"`
+	Version string `json:"version"`
 }
 
 func (c *StorageServiceConfig) applyDefaults() error {
@@ -258,7 +265,8 @@ type WorkflowConfig struct {
 
 // WorkflowMoveConfig controls behaviour specific to the move workflow.
 type WorkflowMoveConfig struct {
-	CheckFixity bool `json:"check_fixity"`
+	CheckFixity     bool `json:"check_fixity"`
+	OnlyIndexUpdate bool `json:"only_index_update"`
 }
 
 type DatabaseConfig struct {
