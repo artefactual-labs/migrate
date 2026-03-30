@@ -365,7 +365,7 @@ func (a *App) FindA(ctx context.Context, params FindParams) (*FindResult, error)
 	}
 	result.Status = aip.Status
 	if aip.Status != string(AIPReplicationStatusNew) {
-		result.Size = formatByteSize(aip.Size.GetOrZero())
+		result.Size = FormatByteSize(aip.Size.GetOrZero())
 		return result, nil
 	}
 	err = find(ctx, a.logger, a, a.StorageClient, aip)
@@ -375,7 +375,7 @@ func (a *App) FindA(ctx context.Context, params FindParams) (*FindResult, error)
 	if err := aip.Reload(ctx, a.DB); err != nil {
 		return nil, err
 	}
-	result.Size = formatByteSize(aip.Size.GetOrZero())
+	result.Size = FormatByteSize(aip.Size.GetOrZero())
 	result.Status = aip.Status
 	return result, nil
 }

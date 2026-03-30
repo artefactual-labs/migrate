@@ -122,12 +122,12 @@ func (a *App) ExportMove(ctx context.Context) error {
 			aip.UUID,
 			aip.Status,
 			// aip..GetOrZero(),
-			formatBool(aip.FixityRun),
-			formatBool(aip.Moved),
-			formatBool(aip.Cleaned),
-			formatBool(aip.Replicated),
-			formatBool(aip.ReIndexed),
-			formatByteSize(aip.Size.GetOrZero()),
+			FormatBool(aip.FixityRun),
+			FormatBool(aip.Moved),
+			FormatBool(aip.Cleaned),
+			FormatBool(aip.Replicated),
+			FormatBool(aip.ReIndexed),
+			FormatByteSize(aip.Size.GetOrZero()),
 			// fmt.Sprintf("%d", aip.TotalDurationNanosecond.GetOrZero()),
 			// aip.NewFullPath.GetOrZero(),
 			// aip.OldFullPath.GetOrZero(),
@@ -198,13 +198,13 @@ func (a *App) ExportReplication(ctx context.Context) error {
 			aip.UUID,
 			aip.Status,
 			aip.CurrentLocation.GetOrZero(),
-			formatByteSize(aip.Size.GetOrZero()),
+			FormatByteSize(aip.Size.GetOrZero()),
 			fmt.Sprintf("%d", aip.Size.GetOrZero()),
 		}
 
 		data[idx] = row
 	}
-	data[len(aips)] = []string{"", "", "", "", formatByteSize(totalSize)}
+	data[len(aips)] = []string{"", "", "", "", FormatByteSize(totalSize)}
 
 	err = writer.Write(headers)
 	if err != nil {
@@ -282,14 +282,29 @@ func ValidateUUIDs(input []string) (uuids []uuid.UUID, err error) {
 	return uuids, nil
 }
 
-func formatBool(b bool) string {
+func ValidateUniqueUUIDs(input []string) (uuids []uuid.UUID, err error) {
+	set := map[uuid.UUID]struct{}{}
+	for _, id := range input {
+		res, err := uuid.Parse(id)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := set[res]; !ok {
+			uuids = append(uuids, res)
+			set[res] = struct{}{}
+		}
+	}
+	return uuids, nil
+}
+
+func FormatBool(b bool) string {
 	if b {
 		return "Done"
 	}
 	return "Not Done"
 }
 
-func formatByteSize(b int64) string {
+func FormatByteSize(b int64) string {
 	const unit = 1024
 
 	// Guard against negative inputs.

@@ -8,6 +8,7 @@ require (
 	github.com/elastic/go-elasticsearch/v6 v6.8.10
 	github.com/google/uuid v1.6.0
 	github.com/jaswdr/faker/v2 v2.8.1
+	github.com/labstack/echo/v5 v5.0.4
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/peterbourgon/ff/v4 v4.0.0-beta.1
 	github.com/rogpeppe/go-internal v1.14.1
@@ -16,6 +17,8 @@ require (
 	go.temporal.io/api v1.55.0
 	go.temporal.io/sdk v1.37.0
 	gotest.tools/v3 v3.5.2
+	maragu.dev/gomponents v1.2.0
+	maragu.dev/gomponents-datastar v0.3.3
 	modernc.org/sqlite v1.39.1
 )
 
@@ -60,20 +63,20 @@ require (
 	github.com/sorairolake/lzip-go v0.3.5 // indirect
 	github.com/stephenafamo/scan v0.7.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/stretchr/testify v1.10.0 // indirect
+	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	go.artefactual.dev/tools v0.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
-	golang.org/x/mod v0.27.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
-	golang.org/x/time v0.11.0 // indirect
-	golang.org/x/tools v0.36.0 // indirect
+	golang.org/x/mod v0.31.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
+	golang.org/x/time v0.14.0 // indirect
+	golang.org/x/tools v0.40.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250324211829-b45e905df463 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250324211829-b45e905df463 // indirect
 	google.golang.org/grpc v1.71.0 // indirect
