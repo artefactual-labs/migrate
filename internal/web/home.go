@@ -22,6 +22,7 @@ func (e *Endpoints) State() *ui.State {
 			Status: "Unkown",
 		},
 		Theme: ui.ThemeLight,
+		Input: e.Input,
 	}
 	return s
 }

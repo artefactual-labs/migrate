@@ -56,9 +56,10 @@ func (cfg *Config) Exec(ctx context.Context, _ []string) error {
 
 func registerWorker(app *application.App) worker.Worker {
 	w := worker.New(app.Tc, app.Config.Temporal.TaskQueue, worker.Options{
-		MaxConcurrentActivityExecutionSize:      app.Config.Temporal.MaxConcurrentActivityExecutionSize,
-		MaxConcurrentLocalActivityExecutionSize: app.Config.Temporal.MaxConcurrentLocalActivityExecutionSize,
-		MaxConcurrentWorkflowTaskExecutionSize:  app.Config.Temporal.MaxConcurrentWorkflowTaskExecutionSize,
+		// NOTE(daniel): The values are hardcoded to 1 because we need to make sure nothing runs concurrently, or more than one workflow runs at a time.
+		// This may change in the future.
+		MaxConcurrentActivityExecutionSize: 1,
+		MaxConcurrentSessionExecutionSize:  1,
 	})
 
 	w.RegisterWorkflowWithOptions(

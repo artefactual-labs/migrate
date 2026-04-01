@@ -24,7 +24,7 @@ func layout(title string, s *State, children ...Node) Node {
 				Ul(
 					navElement("/", "Home"),
 					navElement("/aips", "AIPs"),
-					// navElement("/move", "Move"),
+					navElement("/move", "Move"),
 				),
 			),
 			Main(Group(children)),

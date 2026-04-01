@@ -1,12 +1,24 @@
 package ui
 
-import "github.com/google/uuid"
+import (
+	"github.com/artefactual-labs/migrate/internal/database/gen/models"
+	"github.com/google/uuid"
+)
 
 type State struct {
 	Input    []uuid.UUID
 	Temporal *Service
 	SS       *Service
 	Theme    Theme
+	Move     *MoveState
+	AIP      *models.Aip
+}
+
+type MoveState struct {
+	CurrentMoving    []*models.Aip
+	TotalNumberMoved int
+	TotalSizeMoved   string
+	Err              error
 }
 
 type Service struct {
