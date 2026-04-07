@@ -1,3 +1,15 @@
 h1 {
 	text-align: center;
 }
+
+.with-icon {
+	font-weight: bold;
+	> svg {
+		margin-right: 0.5rem;
+	}
+}
+
+.align-center {
+	display: flex;
+	align-items: center;
+}

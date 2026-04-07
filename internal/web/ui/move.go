@@ -3,17 +3,24 @@ package ui
 import (
 	"fmt"
 
+	"github.com/artefactual-labs/migrate/internal/database/gen/models"
 	. "maragu.dev/gomponents"
 	ds "maragu.dev/gomponents-datastar"
 	. "maragu.dev/gomponents/html"
 )
 
 func Move(s *State) Node {
-	return layout("Move", s, MovePartial(s))
+	return layout("Move", s,
+		Div(
+			ID("move-sse"),
+			Attr("data-init", "@get('/move/partial')"),
+		),
+		MovePartial(s),
+	)
 }
 
 func MovePartial(s *State) Node {
-	isMoving := len(s.Move.CurrentMoving) > 0
+	isMoving := s.WorkflowRunning
 	var ErrNode Node
 	if s.Move.Err != nil {
 		ErrNode = P(Text("Error: " + s.Move.Err.Error()))
@@ -29,13 +36,14 @@ func MovePartial(s *State) Node {
 		),
 		Hr(),
 		Section(
-			// P(Text("Current Progress")),
-			// Progress(
-			// 	// Progress by number of AIPs
-			// 	// Progress by size (total bytes)
-			// 	Value("15"),
-			// 	Max("100"),
-			// ),
+			If(len(s.Move.CurrentMoving) > 0,
+				Div(
+					H5(Text("Currently moving AIP")),
+					Map(s.Move.CurrentMoving, func(aip *models.Aip) Node {
+						return P(Text(aip.UUID))
+					}),
+				),
+			),
 			If(isMoving, Div(
 				P(Text("Currently moving AIPs")),
 				Progress(),
@@ -44,12 +52,11 @@ func MovePartial(s *State) Node {
 		Button(
 			If(isMoving, Disabled()),
 			Style("margin-right: 0.5rem;"),
-			Text("Move"),
 			ds.On("click", "@post('/move')"),
-			// Set up the move
+			Text("Move"),
 		),
 		Button(
-			If(isMoving, Disabled()),
+			If(!isMoving, Disabled()),
 			Class("secondary outline"),
 			Text("Stop"),
 		),

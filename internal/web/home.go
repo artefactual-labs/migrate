@@ -21,8 +21,9 @@ func (e *Endpoints) State() *ui.State {
 			URL:    e.app.Config.Temporal.Address,
 			Status: "Unkown",
 		},
-		Theme: ui.ThemeLight,
-		Input: e.Input,
+		Theme:           ui.ThemeDark,
+		Input:           e.Input,
+		WorkflowRunning: e.IsWorkflowRunning,
 	}
 	return s
 }

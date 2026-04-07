@@ -6,12 +6,13 @@ import (
 )
 
 type State struct {
-	Input    []uuid.UUID
-	Temporal *Service
-	SS       *Service
-	Theme    Theme
-	Move     *MoveState
-	AIP      *models.Aip
+	Input           []uuid.UUID
+	Temporal        *Service
+	SS              *Service
+	Theme           Theme
+	Move            *MoveState
+	AIP             *models.Aip
+	WorkflowRunning bool
 }
 
 type MoveState struct {
