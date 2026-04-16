@@ -20,6 +20,7 @@ type UpdateIndexActivityResult struct {
 	Message             string
 	ElasticUpdateResult any
 	OriginalIndex       *elastic.ElasticAipIndexResponse
+	UpdatedFields       []string
 }
 
 // UpdateIndexA Calls the elastic search API and update the index field: location with the provided name.
@@ -66,9 +67,15 @@ func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams
 		return nil, err
 	}
 	filePath := buildIndexFilePath(location.Path, pkg.CurrentPath, hit.Source.FilePath)
+	if hit.Source.Location != location.Description {
+		result.UpdatedFields = append(result.UpdatedFields, "location")
+	}
+	if hit.Source.FilePath != filePath {
+		result.UpdatedFields = append(result.UpdatedFields, "filePath")
+	}
 
-	if hit.Source.Location == location.Description && hit.Source.FilePath == filePath {
-		result.Message = "Index update not needed"
+	if len(result.UpdatedFields) == 0 {
+		result.Message = "Elasticsearch update not needed: location and filePath already matched target"
 		return result, nil
 	}
 	response, err := elasticClient.UpdateAIPIndex(ctx, hit.ID, location.Description, filePath)
@@ -77,7 +84,7 @@ func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams
 	}
 	result.ElasticUpdateResult = response
 
-	result.Message = "index update complete"
+	result.Message = "Updated Elasticsearch fields: " + strings.Join(result.UpdatedFields, ", ")
 	return result, nil
 }
 

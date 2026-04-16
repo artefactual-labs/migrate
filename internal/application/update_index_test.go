@@ -48,3 +48,63 @@ func TestBuildIndexFilePath(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateIndexMessageFields(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		current   string
+		target    string
+		indexed   string
+		rebuilt   string
+		want      []string
+		wantNoop  bool
+	}{
+		{
+			name:    "reports both fields changed",
+			current: "Old Location",
+			target:  "New Location",
+			indexed: "/old/path/file.7z",
+			rebuilt: "/new/path/file.7z",
+			want:    []string{"location", "filePath"},
+		},
+		{
+			name:    "reports filepath changed",
+			current: "Same Location",
+			target:  "Same Location",
+			indexed: "/old/path/file.7z",
+			rebuilt: "/new/path/file.7z",
+			want:    []string{"filePath"},
+		},
+		{
+			name:     "reports noop",
+			current:  "Same Location",
+			target:   "Same Location",
+			indexed:  "/same/path/file.7z",
+			rebuilt:  "/same/path/file.7z",
+			wantNoop: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var updated []string
+			if tc.current != tc.target {
+				updated = append(updated, "location")
+			}
+			if tc.indexed != tc.rebuilt {
+				updated = append(updated, "filePath")
+			}
+
+			if tc.wantNoop {
+				assert.Equal(t, len(updated), 0)
+				return
+			}
+
+			assert.DeepEqual(t, updated, tc.want)
+		})
+	}
+}
