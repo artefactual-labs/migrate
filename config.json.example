@@ -97,10 +97,17 @@
     }
   },
 
+  // ===========================================================================
+  // ELASTICSEARCH SETTINGS
+  // ---------------------------------------------------------------------------
+  // These settings are used by `migrate update-index` and by the automatic
+  // Elasticsearch update that runs after a successful `migrate move`.
   "elastic": {
-	  "host": "http://localhost:62002",
-	  "version": "v6"
-	},
+    // Base URL of the Elasticsearch API.
+    "host": "http://localhost:62002",
+    // Elasticsearch API version supported by migrate.
+    "version": "v6"
+  },
 
   // ===========================================================================
   // WORKFLOW BEHAVIOUR
@@ -109,9 +116,7 @@
   "workflows": {
     "move": {
       // Run a fixity check via the Storage Service before moving an AIP.
-      "check_fixity": false,
-      // Run the workflow, but only update the Index with the location name.
-			"only_index_update": false
+      "check_fixity": false
     }
   }
 }

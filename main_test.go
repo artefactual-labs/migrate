@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"os"
 	osexec "os/exec"
 	"strconv"
@@ -35,6 +36,7 @@ func TestScripts(t *testing.T) {
 			"temporal": temporalCmd,
 			"worker":   workerCmd,
 			"ssmock":   ssmock.TestScriptCmd,
+			"esmock":   elasticCmd,
 		},
 	})
 }
@@ -137,6 +139,22 @@ func temporalCmd(ts *testscript.TestScript, _ bool, args []string) {
 
 	stdout := &safeBuffer{}
 	stderr := &safeBuffer{}
+	cacheDir := ts.MkAbs(".cache")
+	modCache := ts.MkAbs(".gomodcache")
+	goCache := ts.MkAbs(".gocache")
+	homeDir := ts.MkAbs(".home")
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+		ts.Fatalf("temporal: create cache dir: %v", err)
+	}
+	if err := os.MkdirAll(modCache, 0o755); err != nil {
+		ts.Fatalf("temporal: create mod cache dir: %v", err)
+	}
+	if err := os.MkdirAll(goCache, 0o755); err != nil {
+		ts.Fatalf("temporal: create go cache dir: %v", err)
+	}
+	if err := os.MkdirAll(homeDir, 0o755); err != nil {
+		ts.Fatalf("temporal: create home dir: %v", err)
+	}
 
 	cmd := osexec.Command("go", []string{
 		"tool",
@@ -152,6 +170,12 @@ func temporalCmd(ts *testscript.TestScript, _ bool, args []string) {
 	}...)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
+	cmd.Env = append(os.Environ(),
+		"XDG_CACHE_HOME="+cacheDir,
+		"GOMODCACHE="+modCache,
+		"GOCACHE="+goCache,
+		"HOME="+homeDir,
+	)
 
 	if err := cmd.Start(); err != nil {
 		ts.Fatalf("temporal: start: %v", err)
@@ -215,6 +239,117 @@ func temporalCmd(ts *testscript.TestScript, _ bool, args []string) {
 	ts.Logf("temporal dev server listening on %s", addr)
 }
 
+type elasticDocument struct {
+	ID       string `json:"id"`
+	UUID     string `json:"uuid"`
+	Location string `json:"location"`
+	FilePath string `json:"filePath"`
+}
+
+func elasticCmd(ts *testscript.TestScript, neg bool, args []string) {
+	if neg {
+		ts.Fatalf("esmock: negation not supported")
+	}
+
+	fs := flag.NewFlagSet("esmock", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	updateConfigFlag := fs.Bool("update-config", false, "update migrate config.json before starting Elasticsearch mock")
+	if err := fs.Parse(args); err != nil {
+		ts.Fatalf("esmock: %v", err)
+	}
+
+	data, err := os.ReadFile(ts.MkAbs("esmock.json"))
+	if err != nil {
+		ts.Fatalf("esmock: read esmock.json: %v", err)
+	}
+
+	var cfg struct {
+		Documents []elasticDocument `json:"documents"`
+	}
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		ts.Fatalf("esmock: decode esmock.json: %v", err)
+	}
+
+	docs := make(map[string]elasticDocument, len(cfg.Documents))
+	for _, doc := range cfg.Documents {
+		docs[doc.UUID] = doc
+	}
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		ts.Fatalf("esmock: listen: %v", err)
+	}
+	addr := "http://" + listener.Addr().String()
+	ts.Setenv("ELASTIC_ADDRESS", addr)
+
+	if *updateConfigFlag {
+		temporalAddr := ts.Getenv("TEMPORAL_ADDRESS")
+		if temporalAddr == "" {
+			ts.Fatalf("esmock: TEMPORAL_ADDRESS not set, start temporal server first")
+		}
+		if err := updateConfig(ts, temporalAddr); err != nil {
+			ts.Fatalf("esmock: unable to update config: %v", err)
+		}
+	}
+
+	srv := &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch {
+			case r.Method == http.MethodGet && r.URL.Path == "/aips/_search":
+				var query struct {
+					Query struct {
+						Term struct {
+							UUID string `json:"uuid"`
+						} `json:"term"`
+					} `json:"query"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				doc, ok := docs[query.Query.Term.UUID]
+				w.Header().Set("Content-Type", "application/json")
+				if !ok {
+					_, _ = fmt.Fprint(w, `{"hits":{"total":0,"hits":[]}}`)
+					return
+				}
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"hits": map[string]any{
+						"total": 1,
+						"hits": []map[string]any{{
+							"_index": "aips",
+							"_type":  "_doc",
+							"_id":    doc.ID,
+							"_score": 1,
+							"_source": map[string]any{
+								"uuid":     doc.UUID,
+								"location": doc.Location,
+								"filePath": doc.FilePath,
+							},
+						}},
+					},
+				})
+			case r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, "/aips/_update/"):
+				http.Error(w, "unexpected update request", http.StatusInternalServerError)
+			default:
+				http.NotFound(w, r)
+			}
+		}),
+	}
+
+	go func() {
+		if err := srv.Serve(listener); err != nil && err != http.ErrServerClosed {
+			ts.Logf("esmock: serve error: %v", err)
+		}
+	}()
+
+	ts.Defer(func() {
+		_ = srv.Shutdown(context.Background())
+	})
+
+	ts.Logf("elasticsearch mock listening on %s", addr)
+}
+
 func updateConfig(ts *testscript.TestScript, temporalAddr string) error {
 	configPath := ts.MkAbs("config.json")
 
@@ -239,6 +374,18 @@ func updateConfig(ts *testscript.TestScript, temporalAddr string) error {
 		config["temporal"] = temporalConfig
 	}
 	temporalConfig["address"] = temporalAddr
+
+	if elasticAddr := ts.Getenv("ELASTIC_ADDRESS"); elasticAddr != "" {
+		if config["elastic"] == nil {
+			config["elastic"] = make(map[string]any)
+		}
+		elasticConfig, ok := config["elastic"].(map[string]any)
+		if !ok {
+			elasticConfig = make(map[string]any)
+			config["elastic"] = elasticConfig
+		}
+		elasticConfig["host"] = elasticAddr
+	}
 
 	updatedData, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {

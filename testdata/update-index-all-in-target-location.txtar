@@ -1,0 +1,66 @@
+temporal --update-config
+esmock --update-config
+ssmock start -config ssmock.toml --update-config
+migrate export move
+migrate worker &worker&
+migrate update-index --all-in-target-location --dry-run
+kill worker
+
+stderr 'Workflow completed\..*AIP_UpdateIndex_2faa61dc-ed33-49f4-8b36-954f203bab4a.*Dry run: would update Elasticsearch fields: location, filePath'
+stderr 'Workflow completed\..*AIP_UpdateIndex_daa05a8c-ec53-4c27-968a-6e6bdba905ce.*Dry run: would update Elasticsearch fields: location, filePath'
+stderr 'Update-index summary\..*total=2.*would_update=2.*no_change=0.*skipped=0'
+
+-- config.json --
+{
+  "elastic": {
+    "host": "http://127.0.0.1:9200",
+    "version": "v6"
+  },
+  "storage_service": {
+    "locations": {
+      "source_location_id": "72a9c518-2747-4cb5-aeba-e6309d946e79",
+      "move_target_location_id": "71cb2196-5629-4225-aaf7-d8431b0895c4",
+      "replication_targets": []
+    }
+  }
+}
+-- ssmock.toml --
+[server]
+listen = "127.0.0.1:9000"
+[[location]]
+id = "72a9c518-2747-4cb5-aeba-e6309d946e79"
+description = "Source AIP Store"
+path = "/mnt/source"
+[[location]]
+id = "71cb2196-5629-4225-aaf7-d8431b0895c4"
+description = "Target AIP Store"
+path = "/mnt/target"
+  [[location.packages]]
+  id = "2faa61dc-ed33-49f4-8b36-954f203bab4a"
+  status = "UPLOADED"
+  current_path = "tree/a/example.7z"
+  current_full_path = "/mnt/target/tree/a/example.7z"
+  package_type = "AIP"
+  [[location.packages]]
+  id = "daa05a8c-ec53-4c27-968a-6e6bdba905ce"
+  status = "UPLOADED"
+  current_path = "tree/b/example.7z"
+  current_full_path = "/mnt/target/tree/b/example.7z"
+  package_type = "AIP"
+-- esmock.json --
+{
+  "documents": [
+    {
+      "id": "doc-1",
+      "uuid": "2faa61dc-ed33-49f4-8b36-954f203bab4a",
+      "location": "Old Location",
+      "filePath": "/old/root/example-a.7z"
+    },
+    {
+      "id": "doc-2",
+      "uuid": "daa05a8c-ec53-4c27-968a-6e6bdba905ce",
+      "location": "Old Location",
+      "filePath": "/old/root/example-b.7z"
+    }
+  ]
+}

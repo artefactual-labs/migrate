@@ -9,6 +9,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
+	"strconv"
 	"slices"
 	"strings"
 	"sync"
@@ -215,6 +217,14 @@ func (s *Server) handleFile(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if remainder == "" {
+		if r.Method != http.MethodGet {
+			methodNotAllowed(w, http.MethodGet)
+			return
+		}
+		s.handleFileList(w, r)
+		return
+	}
 	if strings.HasSuffix(remainder, "/check_fixity/") {
 		if r.Method != http.MethodGet {
 			methodNotAllowed(w, http.MethodGet)
@@ -259,6 +269,91 @@ func (s *Server) handleFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, pkg)
+}
+
+func (s *Server) handleFileList(w http.ResponseWriter, r *http.Request) {
+	s.mu.RLock()
+	pkgs := make([]storage_service.Package, 0, len(s.state.packages))
+	for _, pkgState := range s.state.packages {
+		if !matchesLocationFilter(r.URL.Query(), pkgState) {
+			continue
+		}
+		clone := pkgState.pkg
+		pkgs = append(pkgs, clone)
+	}
+	s.mu.RUnlock()
+
+	slices.SortFunc(pkgs, func(a, b storage_service.Package) int {
+		return strings.Compare(a.UUID, b.UUID)
+	})
+
+	limit := 20
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed >= 0 {
+			limit = parsed
+		}
+	}
+	offset := 0
+	if raw := r.URL.Query().Get("offset"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed >= 0 {
+			offset = parsed
+		}
+	}
+	if offset > len(pkgs) {
+		offset = len(pkgs)
+	}
+
+	end := len(pkgs)
+	if limit > 0 && offset+limit < end {
+		end = offset + limit
+	}
+	objects := pkgs[offset:end]
+
+	next := ""
+	if end < len(pkgs) {
+		values := cloneValues(r.URL.Query())
+		values.Set("offset", strconv.Itoa(end))
+		next = fmt.Sprintf("%s?%s", r.URL.Path, values.Encode())
+	}
+
+	resp := struct {
+		Meta struct {
+			Limit      int    `json:"limit"`
+			Next       string `json:"next"`
+			Offset     int    `json:"offset"`
+			Previous   string `json:"previous"`
+			TotalCount int    `json:"total_count"`
+		} `json:"meta"`
+		Objects []storage_service.Package `json:"objects"`
+	}{}
+	resp.Meta.Limit = limit
+	resp.Meta.Next = next
+	resp.Meta.Offset = offset
+	resp.Meta.TotalCount = len(pkgs)
+	resp.Objects = objects
+
+	writeJSON(w, resp)
+}
+
+func matchesLocationFilter(values url.Values, pkgState *packageState) bool {
+	locationID := values.Get("current_location__uuid")
+	if locationID != "" && pkgState.locationID != locationID {
+		return false
+	}
+	packageType := values.Get("package_type")
+	if packageType != "" && pkgState.pkg.PackageType != packageType {
+		return false
+	}
+
+	return true
+}
+
+func cloneValues(values url.Values) url.Values {
+	cloned := make(url.Values, len(values))
+	for key, vals := range values {
+		cloned[key] = append([]string(nil), vals...)
+	}
+	return cloned
 }
 
 func (s *Server) handleCheckFixity(w http.ResponseWriter, r *http.Request, id string) {

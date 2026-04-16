@@ -75,6 +75,13 @@ func registerWorker(app *application.App) worker.Worker {
 		},
 	)
 
+	w.RegisterWorkflowWithOptions(
+		application.NewUpdateIndexWorkflow(app).Run,
+		workflow.RegisterOptions{
+			Name: application.UpdateIndexWorkflowName,
+		},
+	)
+
 	w.RegisterActivityWithOptions(
 		application.NewCheckStorageServiceConnectionActivity(app.StorageClient).Execute,
 		activity.RegisterOptions{Name: application.CheckStorageServiceConnectionActivityName},

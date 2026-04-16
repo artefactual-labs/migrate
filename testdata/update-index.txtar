@@ -1,0 +1,46 @@
+temporal --update-config
+ssmock start -config ssmock.toml --update-config
+migrate load-input
+migrate worker &worker&
+migrate update-index
+kill worker
+
+stderr 'Workflow completed\..*Elasticsearch update skipped: package status is UPLOADED at location /api/v2/location/72a9c518-2747-4cb5-aeba-e6309d946e79/'
+exec sqlite3 -header -csv migrate.db 'SELECT uuid,status,found,moved FROM aips;'
+cmp stdout db.aips.expected.csv
+
+-- input.txt --
+2faa61dc-ed33-49f4-8b36-954f203bab4a
+-- config.json --
+{
+  "elastic": {
+    "host": "http://127.0.0.1:65535",
+    "version": "v6"
+  },
+  "storage_service": {
+    "locations": {
+      "source_location_id": "72a9c518-2747-4cb5-aeba-e6309d946e79",
+      "move_target_location_id": "71cb2196-5629-4225-aaf7-d8431b0895c4",
+      "replication_targets": []
+    }
+  }
+}
+-- ssmock.toml --
+[server]
+listen = "127.0.0.1:9000"
+[[location]]
+id = "72a9c518-2747-4cb5-aeba-e6309d946e79"
+description = "Source AIP Store"
+path = "/mnt/source"
+  [[location.packages]]
+  id = "2faa61dc-ed33-49f4-8b36-954f203bab4a"
+  status = "UPLOADED"
+  current_path = "2faa/61dc/ed33/49f4/8b36/954f/203b/ab4a/example.7z"
+  current_full_path = "/mnt/source/2faa/61dc/ed33/49f4/8b36/954f/203b/ab4a/example.7z"
+[[location]]
+id = "71cb2196-5629-4225-aaf7-d8431b0895c4"
+description = "Target AIP Store"
+path = "/mnt/target"
+-- db.aips.expected.csv --
+uuid,status,found,moved
+2faa61dc-ed33-49f4-8b36-954f203bab4a,found,1,0

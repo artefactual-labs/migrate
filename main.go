@@ -16,6 +16,7 @@ import (
 	"github.com/artefactual-labs/migrate/internal/cmd/movecmd"
 	"github.com/artefactual-labs/migrate/internal/cmd/replicatecmd"
 	"github.com/artefactual-labs/migrate/internal/cmd/rootcmd"
+	"github.com/artefactual-labs/migrate/internal/cmd/updateindexcmd"
 	"github.com/artefactual-labs/migrate/internal/cmd/versioncmd"
 	"github.com/artefactual-labs/migrate/internal/cmd/workercmd"
 )
@@ -43,6 +44,7 @@ func exec(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 	_ = loadinputcmd.New(root)
 	_ = movecmd.New(root)
 	_ = replicatecmd.New(root)
+	_ = updateindexcmd.New(root)
 	_ = versioncmd.New(root)
 	_ = workercmd.New(root)
 

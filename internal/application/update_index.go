@@ -8,12 +8,14 @@ import (
 	"strings"
 
 	"github.com/artefactual-labs/migrate/internal/elastic"
+	"github.com/artefactual-labs/migrate/internal/storage_service"
 )
 
 const UpdateIndexName = "update-index"
 
 type UpdateIndexActivityParams struct {
-	UUID string
+	UUID   string
+	DryRun bool
 }
 
 type UpdateIndexActivityResult struct {
@@ -45,6 +47,20 @@ func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams
 		return nil, errors.New("location path empty")
 	}
 
+	result := &UpdateIndexActivityResult{}
+	pkg, err := a.StorageClient.Packages.GetByID(ctx, params.UUID)
+	if err != nil {
+		return nil, err
+	}
+	if !packageReadyForIndexUpdate(pkg, locationID) {
+		result.Message = fmt.Sprintf(
+			"Elasticsearch update skipped: package status is %s at location %s",
+			pkg.Status,
+			pkg.CurrentLocation,
+		)
+		return result, nil
+	}
+
 	elasticClient, err := elastic.NewClient(elastic.ElasticConfig{
 		Version: a.Config.Elastic.Version,
 		Host:    a.Config.Elastic.Host,
@@ -61,11 +77,7 @@ func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams
 		return nil, fmt.Errorf("expected exactly one result got: %d", len(res.Hits.Hits))
 	}
 	hit := res.Hits.Hits[0]
-	result := &UpdateIndexActivityResult{OriginalIndex: res}
-	pkg, err := a.StorageClient.Packages.GetByID(ctx, params.UUID)
-	if err != nil {
-		return nil, err
-	}
+	result.OriginalIndex = res
 	filePath := buildIndexFilePath(location.Path, pkg.CurrentPath, hit.Source.FilePath)
 	if hit.Source.Location != location.Description {
 		result.UpdatedFields = append(result.UpdatedFields, "location")
@@ -78,14 +90,35 @@ func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams
 		result.Message = "Elasticsearch update not needed: location and filePath already matched target"
 		return result, nil
 	}
+	if params.DryRun {
+		result.Message = formatUpdateIndexMessage(result.UpdatedFields, true)
+		return result, nil
+	}
 	response, err := elasticClient.UpdateAIPIndex(ctx, hit.ID, location.Description, filePath)
 	if err != nil {
 		return nil, err
 	}
 	result.ElasticUpdateResult = response
 
-	result.Message = "Updated Elasticsearch fields: " + strings.Join(result.UpdatedFields, ", ")
+	result.Message = formatUpdateIndexMessage(result.UpdatedFields, false)
 	return result, nil
+}
+
+func formatUpdateIndexMessage(updatedFields []string, dryRun bool) string {
+	prefix := "Updated Elasticsearch fields: "
+	if dryRun {
+		prefix = "Dry run: would update Elasticsearch fields: "
+	}
+
+	return prefix + strings.Join(updatedFields, ", ")
+}
+
+func packageReadyForIndexUpdate(pkg *storage_service.Package, targetLocationID string) bool {
+	if pkg == nil {
+		return false
+	}
+
+	return pkg.Status == "UPLOADED" && strings.Contains(pkg.CurrentLocation, targetLocationID)
 }
 
 func buildIndexFilePath(locationPath, currentPath, indexedPath string) string {

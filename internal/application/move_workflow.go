@@ -70,17 +70,6 @@ func (w *MoveWorkflow) Run(ctx workflow.Context, params MoveWorkflowParams) (*Mo
 		result.MoveDetails = append(result.MoveDetails, "Fixity status: "+fixityResult.Status)
 	}
 
-	if w.App.Config.Workflows.Move.OnlyIndexUpdate {
-		updateIndexParams := UpdateIndexActivityParams{UUID: params.UUID.String()}
-		updateIndexResult := UpdateIndexActivityResult{}
-		err = workflow.ExecuteActivity(ctx, UpdateIndexName, updateIndexParams).Get(ctx, &updateIndexResult)
-		if err != nil {
-			return nil, err
-		}
-		result.Message = updateIndexResult.Message
-		return result, nil
-	}
-
 	if findRes.Status == string(AIPStatusMoved) {
 		result.Message = "AIP already moved"
 		return result, nil

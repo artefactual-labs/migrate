@@ -60,7 +60,7 @@ Migrate separates **preparation**, **command submission**, and **execution**:
   This gives you a baseline snapshot of AIP states before running long
   migrations.
 
-- **Command submission (`migrate replicate` / `migrate move`)**:
+- **Command submission (`migrate replicate` / `migrate move` / `migrate update-index`)**:
   The client submits one workflow per AIP to Temporal.
 
 - **Execution (`migrate worker`)**:
@@ -93,6 +93,10 @@ starts a Temporal workflow for the first UUID, and waits until that workflow
 finishes before it touches the next line. AIPs are handled strictly one after
 another: even though Temporal can queue lots of work, the client makes the job
 serial by blocking on each result.
+
+`migrate update-index` follows the same serial submission model, but it can get
+its UUIDs either from `input.txt` or by discovering all AIPs currently in the
+configured move target location.
 
 Temporal gives us durability and resumability, but we reintroduce a bottleneck
 by tying workflow submission to a blocking CLI loop. We can explore future
@@ -174,9 +178,9 @@ migrate worker
 This starts a worker process that handles Temporal workflows. Keep this
 running in a separate terminal.
 
-### 5. Move or replicate AIPs
+### 5. Run workflows
 
-At this point, you can either `replicate` or `move` AIPs.
+At this point, you can `replicate`, `move`, or `update-index` AIPs.
 
 The following command starts the replication process for AIPs to the configured
 replication locations:
@@ -186,6 +190,42 @@ replication locations:
 On the other hand, to move AIPs from source to destination, run:
 
     migrate move
+
+To update Elasticsearch documents for AIPs that are already in the configured
+move target location, run:
+
+    migrate update-index
+
+This standalone workflow updates the Elasticsearch `location` and `filePath`
+fields after confirming in Storage Service that the AIP is already present in
+the target location.
+
+Use `migrate update-index` for Elasticsearch reconciliation. The `move`
+workflow no longer exposes a separate config mode for index-only updates.
+
+By default, `migrate update-index` reads UUIDs from `input.txt`, just like the
+other workflow commands.
+
+To preview Elasticsearch changes without writing them, run:
+
+    migrate update-index --dry-run
+
+To discover all AIPs currently in the configured move target location and run
+the update workflow for all of them, run:
+
+    migrate update-index --all-in-target-location
+
+You can combine both modes to preview all updates for the target location:
+
+    migrate update-index --all-in-target-location --dry-run
+
+The CLI prints one result line per AIP and a final summary showing how many
+documents were updated, would be updated, already matched the target, or were
+skipped.
+
+A dry-run summary line looks like:
+
+    time=2026-04-16T10:12:04.328+02:00 level=INFO msg="Update-index summary." total=10 would_update=6 no_change=3 skipped=1
 
 ### 6. Export results
 

@@ -265,8 +265,7 @@ type WorkflowConfig struct {
 
 // WorkflowMoveConfig controls behaviour specific to the move workflow.
 type WorkflowMoveConfig struct {
-	CheckFixity     bool `json:"check_fixity"`
-	OnlyIndexUpdate bool `json:"only_index_update"`
+	CheckFixity bool `json:"check_fixity"`
 }
 
 type DatabaseConfig struct {
