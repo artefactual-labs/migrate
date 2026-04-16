@@ -12,7 +12,7 @@ import (
 
 type ElasticClient interface {
 	GetAIPByUUID(ctx context.Context, uuid string) (*ElasticAipIndexResponse, error)
-	UpdateAIPIndexLocation(ctx context.Context, id, location string) (map[string]any, error)
+	UpdateAIPIndex(ctx context.Context, id, location, filePath string) (map[string]any, error)
 }
 
 type ElasticConfig struct {
@@ -58,13 +58,15 @@ func (e ElasticV6) GetAIPByUUID(ctx context.Context, uuid string) (*ElasticAipIn
 	return &elasticRes, nil
 }
 
-func (e ElasticV6) UpdateAIPIndexLocation(ctx context.Context, id, location string) (map[string]any, error) {
+func (e ElasticV6) UpdateAIPIndex(ctx context.Context, id, location, filePath string) (map[string]any, error) {
 	doc := struct {
 		Doc struct {
 			Location string `json:"location"`
+			FilePath string `json:"filePath"`
 		} `json:"doc"`
 	}{}
 	doc.Doc.Location = location
+	doc.Doc.FilePath = filePath
 	data, err := json.Marshal(&doc)
 	if err != nil {
 		return nil, err

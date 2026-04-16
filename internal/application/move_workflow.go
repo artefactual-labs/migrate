@@ -77,7 +77,7 @@ func (w *MoveWorkflow) Run(ctx workflow.Context, params MoveWorkflowParams) (*Mo
 		if err != nil {
 			return nil, err
 		}
-		result.Message = "Only updated Index"
+		result.Message = updateIndexResult.Message
 		return result, nil
 	}
 
@@ -100,6 +100,6 @@ func (w *MoveWorkflow) Run(ctx workflow.Context, params MoveWorkflowParams) (*Mo
 		return nil, err
 	}
 
-	result.Message = "Status: " + moveResult.Status
+	result.Message = "Status: " + moveResult.Status + "; " + updateIndexResult.Message
 	return result, nil
 }

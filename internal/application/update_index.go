@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
+	"strings"
 
 	"github.com/artefactual-labs/migrate/internal/elastic"
 )
@@ -38,6 +40,9 @@ func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams
 	if location.Description == "" {
 		return nil, errors.New("location empty")
 	}
+	if location.Path == "" {
+		return nil, errors.New("location path empty")
+	}
 
 	elasticClient, err := elastic.NewClient(elastic.ElasticConfig{
 		Version: a.Config.Elastic.Version,
@@ -56,12 +61,17 @@ func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams
 	}
 	hit := res.Hits.Hits[0]
 	result := &UpdateIndexActivityResult{OriginalIndex: res}
+	pkg, err := a.StorageClient.Packages.GetByID(ctx, params.UUID)
+	if err != nil {
+		return nil, err
+	}
+	filePath := buildIndexFilePath(location.Path, pkg.CurrentPath, hit.Source.FilePath)
 
-	if hit.Source.Location == location.Description {
+	if hit.Source.Location == location.Description && hit.Source.FilePath == filePath {
 		result.Message = "Index update not needed"
 		return result, nil
 	}
-	response, err := elasticClient.UpdateAIPIndexLocation(ctx, hit.ID, location.Description)
+	response, err := elasticClient.UpdateAIPIndex(ctx, hit.ID, location.Description, filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -69,4 +79,19 @@ func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams
 
 	result.Message = "index update complete"
 	return result, nil
+}
+
+func buildIndexFilePath(locationPath, currentPath, indexedPath string) string {
+	cleanLocationPath := strings.TrimRight(locationPath, "/")
+	cleanCurrentPath := strings.TrimLeft(currentPath, "/")
+	if cleanCurrentPath != "" {
+		return path.Clean(path.Join(cleanLocationPath, cleanCurrentPath))
+	}
+
+	base := path.Base(indexedPath)
+	if base == "." || base == "/" || base == "" {
+		return path.Clean(cleanLocationPath)
+	}
+
+	return path.Clean(path.Join(cleanLocationPath, base))
 }
