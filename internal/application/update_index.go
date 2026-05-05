@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/artefactual-labs/migrate/internal/elastic"
 )
@@ -30,6 +31,11 @@ func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams
 	}
 
 	var err error
+	ssPackage, err := a.StorageClient.Packages.GetByID(ctx, params.UUID)
+	if err != nil {
+		return nil, err
+	}
+
 	locationID := a.Config.StorageService.Locations.MoveTargetLocationID
 	location, err := a.StorageClient.Location.Get(ctx, locationID)
 	if err != nil {
@@ -37,6 +43,9 @@ func (a *App) UpdateIndexA(ctx context.Context, params UpdateIndexActivityParams
 	}
 	if location.Description == "" {
 		return nil, errors.New("location empty")
+	}
+	if !strings.Contains(ssPackage.CurrentLocation, locationID) {
+		return nil, errors.New("AIP has a different location: " + ssPackage.CurrentLocation)
 	}
 
 	elasticClient, err := elastic.NewClient(elastic.ElasticConfig{
